@@ -10,18 +10,48 @@ using namespace std::chrono;
 //Platform Defines
 #define ATMEGA32U4_FLASH_SIZE 32*1024
 #define ATMEGA32U4_ENTRY 0xB00
-#define ATMEGA32U4_PORTB 0x25
+#define ATMEGA32U4_PORTB_ADDRESS 0x25
+#define IO_REG_START 0x20
+#define SREG_ADDRESS 0x5F
 
 //Globals
+#define CLR 0
+#define SET 1
+#define IGNORE 2
+struct status
+{
+    status()
+    {
+        C = IGNORE;
+        Z = IGNORE;
+        N = IGNORE;
+        V = IGNORE;
+        S = IGNORE;
+        H = IGNORE;
+        T = IGNORE;
+        I = IGNORE;
+    }
+    int8_t C:3;
+    int8_t Z:3;
+    int8_t N:3;
+    int8_t V:3;
+    int8_t S:3;
+    int8_t H:3;
+    int8_t T:3;
+    int8_t I:3;
+};
 uint8_t memory[ATMEGA32U4_FLASH_SIZE];
 int32_t programStart = ATMEGA32U4_ENTRY;
 int32_t stackPointer = programStart - 1;
 uint16_t PC;
+status SREG;
 
 //API
+void engineInit();
 void loadProgram();
 void execProgram();
 void writeMemory(int32_t address, int32_t value);
+void pushStatus(status& newStatus);
 
 extern "C" int32_t workFlow()
 {
@@ -48,11 +78,61 @@ int32_t main()
 
 void writeMemory(int32_t address, int32_t value)
 {
-    if(address == ATMEGA32U4_PORTB)
+    switch(address)
     {
-      printf("PortB 0x%X\n", value);
+        case ATMEGA32U4_PORTB_ADDRESS:
+            printf("PortB 0x%X\n", value);
+            break;
     }
     memory[address] = value;
+}
+
+void pushStatus(status& newStatus)
+{
+    if(newStatus.C != IGNORE)
+    {
+        SREG.C = newStatus.C;
+    }
+    if(newStatus.Z != IGNORE)
+    {
+        SREG.Z = newStatus.Z;
+    }
+    if(newStatus.N != IGNORE)
+    {
+        SREG.N = newStatus.N;
+    }
+    if(newStatus.V != IGNORE)
+    {
+        SREG.V = newStatus.V;
+    }
+    if(newStatus.S != IGNORE)
+    {
+        SREG.S = newStatus.S;
+    }
+    if(newStatus.H != IGNORE)
+    {
+        SREG.H = newStatus.H;
+    }
+    if(newStatus.T != IGNORE)
+    {
+         SREG.T = newStatus.T;
+    }
+    if(newStatus.I != IGNORE)
+    {
+         SREG.I = newStatus.I;
+    }
+}
+
+void engineInit()
+{
+    SREG.C = CLR;
+    SREG.Z = CLR;
+    SREG.N = CLR;
+    SREG.V = CLR;
+    SREG.S = CLR;
+    SREG.H = CLR;
+    SREG.T = CLR;
+    SREG.I = CLR;
 }
 
 void loadProgram()
@@ -137,11 +217,14 @@ void execProgram()
     PC = programStart;
     while((PC < ATMEGA32U4_FLASH_SIZE) && (memory[PC] != 0x95) && (memory[PC+1] != 0x98)) //break
     {
+        uint8_t result;
+        status newStatus;
         switch(memory[PC])
         {
             case 0x1: //movw
                memory[((memory[PC+1] & 0xF0) >> 4)*2] = memory[(memory[PC+1] & 0xF)*2];
                memory[(((memory[PC+1] & 0xF0) >> 4)*2)+1] = memory[((memory[PC+1] & 0xF)*2)+1];
+               // No SREG Updates
                PC+=2;
                break;
             case 0x24:
@@ -149,6 +232,11 @@ void execProgram()
             case 0x26:
             case 0x27: //eor
                memory[(memory[PC+1] & 0xF0) >> 4] = memory[(memory[PC+1] & 0xF0) >> 4]^memory[memory[PC+1] & 0xF];
+               result = memory[(memory[PC+1] & 0xF0) >> 4];
+               newStatus.V = CLR;
+               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                PC+=2;
                break;
             case 0x82:
@@ -156,6 +244,7 @@ void execProgram()
                 if((memory[PC+1] & 0xF) == 0x0) //st (std) z
                 {
                     writeMemory((memory[31] << 8) | memory[30], memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)]);
+                    // No SREG Updates
                     PC+=2;
                 }
                 break;
@@ -165,6 +254,7 @@ void execProgram()
                {
                    memory[stackPointer] = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
                    stackPointer--;
+                   // No SREG Updates
                    PC+=2;
                }
                break;
@@ -174,10 +264,12 @@ void execProgram()
                 {
                     case 0xC:
                     case 0xD: //jmp
+                        // No SREG Updates
                         PC+=(memory[PC+2] << 8 | memory[PC+3])*2;
                         break;
                     case 0xE:
                     case 0xF: //call
+                        // No SREG Updates
                         PC = programStart + (((memory[PC] & 0x1) << 21) | ((memory[PC+1] & 0xF0) << 17) | ((memory[PC+1] & 0x1) << 16)
                          | (memory[PC+2] << 8) | memory[PC+3])*2;
                         break;
@@ -193,6 +285,7 @@ void execProgram()
             case 0xB7: //in
                 memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)]
                  = memory[(((memory[PC] & 0x07) >> 1) << 4) | (memory[PC+1] & 0x0F)];
+                // No SREG Updates
                 PC+=2;
                 break;
             case 0xB8:
@@ -203,7 +296,8 @@ void execProgram()
             case 0xBD:
             case 0xBE:
             case 0xBF: //out
-                writeMemory(((((memory[PC] & 0x07) >> 1) << 4) | (memory[PC+1] & 0x0F)) + 0x20, memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)]);
+                writeMemory(((((memory[PC] & 0x07) >> 1) << 4) | (memory[PC+1] & 0x0F)) + IO_REG_START, memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)]);
+                // No SREG Updates
                 PC+=2;
                 break;
             case 0xE0:
@@ -223,6 +317,7 @@ void execProgram()
             case 0xEE:
             case 0xEF: //ldi
                 memory[16 + ((memory[PC+1] & 0xF0) >> 4)] = ((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF);
+                // No SREG Updates
                 PC+=2;
                 break;
 
@@ -230,5 +325,6 @@ void execProgram()
                 assert(0);
                 break;
         }
+        pushStatus(newStatus);
     }
 }
