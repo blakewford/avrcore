@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
@@ -6,7 +7,6 @@
 #include <chrono>
 using namespace std::chrono;
 #endif
-
 //Platform Defines
 #define ATMEGA32U4_FLASH_SIZE 32*1024
 #define ATMEGA32U4_ENTRY 0xB00
@@ -55,11 +55,12 @@ void pushStatus(status& newStatus);
 
 extern "C" int32_t workFlow()
 {
+    loadProgram();
+
 #ifdef PROFILE
     microseconds startProfile = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
 #endif
 
-    loadProgram();
     execProgram();
     printf("Program Ended at Address 0x%X\n", PC);
 
@@ -71,7 +72,7 @@ extern "C" int32_t workFlow()
     return 0;
 }
 
-int32_t main()
+int32_t main(int32_t argc, char** argv)
 {
     return workFlow();
 }
@@ -135,81 +136,145 @@ void engineInit()
     SREG.I = CLR;
 }
 
+int32_t getValueFromHex(uint8_t* buffer, int32_t size)
+{
+    int32_t value = 0;
+    int32_t cursor = 0;
+    while(size--)
+    {
+        int32_t shift = (1 << size*4);
+        if(buffer[cursor] < 0x3A)
+        {
+            value += (buffer[cursor++] - 0x30)*shift;
+        }
+        else
+        {
+            value += (buffer[cursor++] - 0x37)*shift;
+        }
+    }
+
+    return value;
+}
+
 void loadProgram()
 {
-// 0:   0c 94 56 00     jmp     0xac    ; 0xac <__ctors_end>
-    memory[0xB00] = 0x94;
-    memory[0xB01] = 0x0C;
-    memory[0xB02] = 0x00;
-    memory[0xB03] = 0x56;
-//ac:   11 24           eor     r1, r1
-    memory[0xBAC] = 0x24;
-    memory[0xBAD] = 0x11;
-//ae:   1f be           out     0x3f, r1        ; 63
-    memory[0xBAE] = 0xBE;
-    memory[0xBAF] = 0x1F;
-//b0:   cf ef           ldi     r28, 0xFF       ; 255
-//b2:   da e0           ldi     r29, 0x0A       ; 10
-    memory[0xBB0] = 0xEF;
-    memory[0xBB1] = 0xCF;
-    memory[0xBB2] = 0xE0;
-    memory[0xBB3] = 0xDA;
-//b4:   de bf           out     0x3e, r29       ; 62
-//b6:   cd bf           out     0x3d, r28       ; 61
-    memory[0xBB4] = 0xBF;
-    memory[0xBB5] = 0xDE;
-    memory[0xBB6] = 0xBF;
-    memory[0xBB7] = 0xCD;
-//b8:   0e 94 62 00     call    0xc4    ; 0xc4 <main>
-    memory[0xBB8] = 0x94;
-    memory[0xBB9] = 0x0E;
-    memory[0xBBA] = 0x00;
-    memory[0xBBB] = 0x62;
-//c4:   cf 93           push    r28
-//c6:   df 93           push    r29
-    memory[0xBC4] = 0x93;
-    memory[0xBC5] = 0xCF;
-    memory[0xBC6] = 0x93;
-    memory[0xBC7] = 0xDF;
-//c8:   cd b7           in      r28, 0x3d       ; 61
-//ca:   de b7           in      r29, 0x3e       ; 62
-    memory[0xBC8] = 0xB7;
-    memory[0xBC9] = 0xCD;
-    memory[0xBCA] = 0xB7;
-    memory[0xBCB] = 0xDE;
-//cc:   84 e2           ldi     r24, 0x24       ; 36
-//ce:   90 e0           ldi     r25, 0x00       ; 0
-//d0:   28 e0           ldi     r18, 0x08       ; 8
-    memory[0xBCC] = 0xE2;
-    memory[0xBCD] = 0x84;
-    memory[0xBCE] = 0xE0;
-    memory[0xBCF] = 0x90;
-    memory[0xBD0] = 0xE0;
-    memory[0xBD1] = 0x28;
-//d2:   fc 01           movw    r30, r24
-    memory[0xBD2] = 0x01;
-    memory[0xBD3] = 0xFC;
-//d4:   20 83           st      Z, r18
-    memory[0xBD4] = 0x83;
-    memory[0xBD5] = 0x20;
-//d6:   85 e2           ldi     r24, 0x25       ; 37
-    memory[0xBD6] = 0xE2;
-    memory[0xBD7] = 0x85;
-//d8:   90 e0           ldi     r25, 0x00       ; 0
-    memory[0xBD8] = 0xE0;
-    memory[0xBD9] = 0x90;
-//da:   21 e0           ldi     r18, 0x01       ; 1
-    memory[0xBDA] = 0xE0;
-    memory[0xBDB] = 0x21;
-//dc:   fc 01           movw    r30, r24
-    memory[0xBDC] = 0x01;
-    memory[0xBDD] = 0xFC;
-//de:   20 83           st      Z, r18
-    memory[0xBDE] = 0x83;
-    memory[0xBDF] = 0x20;
-//e0:   98 95           break
-    memory[0xBE0] = 0x95;
-    memory[0xBE1] = 0x98;
+    FILE* executable = fopen("blink_atmega32u4.hex","rb");
+    if(executable)
+    {
+        fseek(executable, 0, SEEK_END);
+        int32_t size = ftell(executable);
+        rewind(executable);
+        uint8_t* binary = (uint8_t*)malloc(size);
+        fread(binary, 1, size, executable);
+        fclose(executable);
+
+        int32_t fileCursor = 0;
+        int32_t addressCursor = ATMEGA32U4_ENTRY;
+        while(true)
+        {
+            assert(binary[fileCursor++] == ':');
+            int32_t byteCount = getValueFromHex(&binary[fileCursor], 2);
+            int32_t address = getValueFromHex(&binary[fileCursor+=2], 4);
+            int32_t recordType = getValueFromHex(&binary[fileCursor+=4], 2);
+            if(recordType == 0x00)
+            {
+                while(byteCount)
+                {
+                    int32_t instr = getValueFromHex(&binary[fileCursor+=2], 2);
+                    memory[addressCursor++] = getValueFromHex(&binary[fileCursor+=2], 2);
+                    memory[addressCursor++] = instr;
+                    byteCount-=2;
+                }
+                while(binary[++fileCursor] != ':')
+                ;
+            }
+            else if(recordType == 0x01)
+            {
+                break;
+            }
+            else
+            {
+                assert(false);
+            }
+        }
+        free(binary);
+    }
+    else
+    {
+    // 0:   0c 94 56 00     jmp     0xac    ; 0xac <__ctors_end>
+        memory[0xB00] = 0x94;
+        memory[0xB01] = 0x0C;
+        memory[0xB02] = 0x00;
+        memory[0xB03] = 0x56;
+    //ac:   11 24           eor     r1, r1
+        memory[0xBAC] = 0x24;
+        memory[0xBAD] = 0x11;
+    //ae:   1f be           out     0x3f, r1        ; 63
+        memory[0xBAE] = 0xBE;
+        memory[0xBAF] = 0x1F;
+    //b0:   cf ef           ldi     r28, 0xFF       ; 255
+    //b2:   da e0           ldi     r29, 0x0A       ; 10
+        memory[0xBB0] = 0xEF;
+        memory[0xBB1] = 0xCF;
+        memory[0xBB2] = 0xE0;
+        memory[0xBB3] = 0xDA;
+    //b4:   de bf           out     0x3e, r29       ; 62
+    //b6:   cd bf           out     0x3d, r28       ; 61
+        memory[0xBB4] = 0xBF;
+        memory[0xBB5] = 0xDE;
+        memory[0xBB6] = 0xBF;
+        memory[0xBB7] = 0xCD;
+    //b8:   0e 94 62 00     call    0xc4    ; 0xc4 <main>
+        memory[0xBB8] = 0x94;
+        memory[0xBB9] = 0x0E;
+        memory[0xBBA] = 0x00;
+        memory[0xBBB] = 0x62;
+    //c4:   cf 93           push    r28
+    //c6:   df 93           push    r29
+        memory[0xBC4] = 0x93;
+        memory[0xBC5] = 0xCF;
+        memory[0xBC6] = 0x93;
+        memory[0xBC7] = 0xDF;
+    //c8:   cd b7           in      r28, 0x3d       ; 61
+    //ca:   de b7           in      r29, 0x3e       ; 62
+        memory[0xBC8] = 0xB7;
+        memory[0xBC9] = 0xCD;
+        memory[0xBCA] = 0xB7;
+        memory[0xBCB] = 0xDE;
+    //cc:   84 e2           ldi     r24, 0x24       ; 36
+    //ce:   90 e0           ldi     r25, 0x00       ; 0
+    //d0:   28 e0           ldi     r18, 0x08       ; 8
+        memory[0xBCC] = 0xE2;
+        memory[0xBCD] = 0x84;
+        memory[0xBCE] = 0xE0;
+        memory[0xBCF] = 0x90;
+        memory[0xBD0] = 0xE0;
+        memory[0xBD1] = 0x28;
+    //d2:   fc 01           movw    r30, r24
+        memory[0xBD2] = 0x01;
+        memory[0xBD3] = 0xFC;
+    //d4:   20 83           st      Z, r18
+        memory[0xBD4] = 0x83;
+        memory[0xBD5] = 0x20;
+    //d6:   85 e2           ldi     r24, 0x25       ; 37
+        memory[0xBD6] = 0xE2;
+        memory[0xBD7] = 0x85;
+    //d8:   90 e0           ldi     r25, 0x00       ; 0
+        memory[0xBD8] = 0xE0;
+        memory[0xBD9] = 0x90;
+    //da:   21 e0           ldi     r18, 0x01       ; 1
+        memory[0xBDA] = 0xE0;
+        memory[0xBDB] = 0x21;
+    //dc:   fc 01           movw    r30, r24
+        memory[0xBDC] = 0x01;
+        memory[0xBDD] = 0xFC;
+    //de:   20 83           st      Z, r18
+        memory[0xBDE] = 0x83;
+        memory[0xBDF] = 0x20;
+    //e0:   98 95           break
+        memory[0xBE0] = 0x95;
+        memory[0xBE1] = 0x98;
+    }
 }
 
 void execProgram()
