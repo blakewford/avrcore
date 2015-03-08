@@ -159,9 +159,9 @@ int32_t getValueFromHex(uint8_t* buffer, int32_t size)
     while(size--)
     {
         int32_t shift = (1 << size*4);
-        if(buffer[cursor] < 0x3A)
+        if(buffer[cursor] < ':')
         {
-            value += (buffer[cursor++] - 0x30)*shift;
+            value += (buffer[cursor++] - '0')*shift;
         }
         else
         {
@@ -405,6 +405,7 @@ void execProgram()
                 break;
 
             default:
+                printf("Instruction not implemented at address 0x%X\n", PC);
                 assert(0);
                 break;
         }
