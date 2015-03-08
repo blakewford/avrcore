@@ -331,6 +331,20 @@ void execProgram()
                // No SREG Updates
                PC+=2;
                break;
+            case 0x4: //cpc
+            case 0x5:
+            case 0x6:
+            case 0x7:
+               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               result -= SREG.C == SET ? 1: 0;
+               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+               newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] += (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+               PC+=2;
+               break;
             case 0x24:
             case 0x25:
             case 0x26:
@@ -363,9 +377,9 @@ void execProgram()
                 newStatus.V = generateVStatus(memory[16+(memory[PC+1] >> 4)], (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF)));
                 newStatus.H = generateHStatus(memory[16+(memory[PC+1] >> 4)], (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF)));
                 newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
-                newStatus.Z = result == 0 ? SET: CLR;
+                newStatus.Z = result == 0x00 ? SET: CLR;
                 newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
-                newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]);
+                newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]) ? SET: CLR;
                 PC+=2;
                 break;
             case 0x82:
