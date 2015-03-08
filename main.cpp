@@ -2,11 +2,17 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #ifdef PROFILE
 #include <chrono>
 using namespace std::chrono;
 #endif
+
+int32_t cachedArgc = 0;
+char argvStorage[1024];
+char* cachedArgv[64];
+
 //Platform Defines
 #define ATMEGA32U4_FLASH_SIZE 32*1024
 #define ATMEGA32U4_ENTRY 0xB00
@@ -74,6 +80,16 @@ extern "C" int32_t workFlow()
 
 int32_t main(int32_t argc, char** argv)
 {
+    cachedArgc = argc;
+    char* storagePointer = argvStorage;
+    while(argc--)
+    {
+        cachedArgv[argc] = storagePointer;
+        int32_t length = strlen(argv[argc]);
+        strcat(storagePointer, argv[argc]);
+        storagePointer+=(length+1);
+    }
+
     return workFlow();
 }
 
@@ -158,7 +174,8 @@ int32_t getValueFromHex(uint8_t* buffer, int32_t size)
 
 void loadProgram()
 {
-    FILE* executable = fopen("blink_atmega32u4.hex","rb");
+    FILE* executable = NULL;
+    if(cachedArgc > 1) executable = fopen(cachedArgv[1],"rb");
     if(executable)
     {
         fseek(executable, 0, SEEK_END);
@@ -201,6 +218,7 @@ void loadProgram()
     }
     else
     {
+        printf("Fall back to default internal test program.\n");
     // 0:   0c 94 56 00     jmp     0xac    ; 0xac <__ctors_end>
         memory[0xB00] = 0x94;
         memory[0xB01] = 0x0C;
