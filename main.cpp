@@ -295,6 +295,27 @@ void loadProgram()
     }
 }
 
+int8_t generateVStatus(uint8_t firstOp, uint8_t secondOp)
+{
+    bool firstMSB = (firstOp & 0x80) > 0;
+    bool secondMSB = (secondOp & 0x80) > 0;
+    if(firstMSB && secondMSB)
+    {
+        return ((firstOp + secondOp) & 0x80) > 0 ? CLR: SET;
+    }
+    else if(!firstMSB && !secondMSB)
+    {
+        return ((firstOp + secondOp) & 0x80) == 0 ? CLR: SET;
+    }
+
+    return CLR;
+}
+
+int8_t generateHStatus(uint8_t firstOp, uint8_t secondOp)
+{
+    return (((firstOp & 0xF) + (secondOp & 0xF)) & 0x10) == 0x10 ? SET: CLR;
+}
+
 void execProgram()
 {
     PC = programStart;
@@ -322,6 +343,31 @@ void execProgram()
                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                PC+=2;
                break;
+            case 0x30:
+            case 0x31:
+            case 0x32:
+            case 0x33:
+            case 0x34:
+            case 0x35:
+            case 0x36:
+            case 0x37:
+            case 0x38:
+            case 0x39:
+            case 0x3A:
+            case 0x3B:
+            case 0x3C:
+            case 0x3D:
+            case 0x3E:
+            case 0x3F: //cpi
+                result = memory[16+(memory[PC+1] >> 4)] - (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF));
+                newStatus.V = generateVStatus(memory[16+(memory[PC+1] >> 4)], (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF)));
+                newStatus.H = generateHStatus(memory[16+(memory[PC+1] >> 4)], (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF)));
+                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                newStatus.Z = result == 0 ? SET: CLR;
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]);
+                PC+=2;
+                break;
             case 0x82:
             case 0x83:
                 if((memory[PC+1] & 0xF) == 0x0) //st (std) z
