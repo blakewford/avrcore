@@ -383,6 +383,27 @@ void execProgram()
                 // No SREG Updates
                 PC+=2;
                 break;
+            case 0xC0:
+            case 0xC1:
+            case 0xC2:
+            case 0xC3:
+            case 0xC4:
+            case 0xC5:
+            case 0xC6:
+            case 0xC7:
+            case 0xC8:
+            case 0xC9:
+            case 0xCA:
+            case 0xCB:
+            case 0xCC:
+            case 0xCD:
+            case 0xCE:
+            case 0xCF: //rjmp
+                result = ((memory[PC] & 0xF) << 8) | memory[PC+1];
+                PC+=2;
+                PC = (0x800 == (result & 0x800)) ? PC - (0x1000 - (2*(result^0x800))) : PC + (2*result);
+                // No SREG Updates
+                break;
             case 0xE0:
             case 0xE1:
             case 0xE2:
