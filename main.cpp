@@ -321,7 +321,7 @@ void execProgram()
     PC = programStart;
     while((PC < ATMEGA32U4_FLASH_SIZE) && (memory[PC] != 0x95) && (memory[PC+1] != 0x98)) //break
     {
-        uint8_t result;
+        uint16_t result;
         status newStatus;
         switch(memory[PC])
         {
@@ -484,7 +484,21 @@ void execProgram()
                 // No SREG Updates
                 PC+=2;
                 break;
-
+            case 0xF4:
+            case 0xF5:
+            case 0xF6:
+            case 0xF7:
+                if((((memory[PC] & 0x0C) >> 2) == 0x1) && ((memory[PC+1] & 0x7) == 0x1)) //brne
+                {
+                    if(SREG.Z == CLR)
+                    {
+                        result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
+                        PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
+                    }
+                    PC+=2;
+                }
+                // No SREG Updates
+                break;
             default:
                 printf("Instruction not implemented at address 0x%X\n", PC);
                 assert(0);
