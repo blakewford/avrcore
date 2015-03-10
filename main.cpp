@@ -56,6 +56,7 @@ status SREG;
 void engineInit();
 void loadProgram();
 void execProgram();
+uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
 void pushStatus(status& newStatus);
 
@@ -91,6 +92,11 @@ int32_t main(int32_t argc, char** argv)
     }
 
     return workFlow();
+}
+
+uint8_t readMemory(int32_t address)
+{
+    return memory[address];
 }
 
 void writeMemory(int32_t address, int32_t value)
@@ -342,7 +348,7 @@ void execProgram()
                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
                newStatus.Z = result == 0x00 ? SET: CLR;
                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
-               newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] += (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+               newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
                PC+=2;
                break;
             case 0x24:
@@ -396,7 +402,7 @@ void execProgram()
                 if((memory[PC+1] & 0xF) == 0x5) //lpm (rd, z+)
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
-                    memory[result] = memory[2*(((memory[31] << 8) | memory[30]) >> 1) + programStart];
+                    memory[result] = readMemory(2*(((memory[31] << 8) | memory[30]) >> 1) + programStart);
                     // No SREG Updates
                     PC+=2;
                 }
