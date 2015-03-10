@@ -325,22 +325,29 @@ int8_t generateHStatus(uint8_t firstOp, uint8_t secondOp)
 void execProgram()
 {
     PC = programStart;
-    while((PC < ATMEGA32U4_FLASH_SIZE) && (memory[PC] != 0x95) && (memory[PC+1] != 0x98)) //break
+    while((PC < ATMEGA32U4_FLASH_SIZE) && !((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
     {
         uint16_t result;
         status newStatus;
         switch(memory[PC])
         {
+            case 0x0:
+                if(memory[PC+1] == 0x00) //nop
+                {
+                    // No SREG Updates
+                    PC+=2;
+                }
+                break;
             case 0x1: //movw
                memory[((memory[PC+1] & 0xF0) >> 4)*2] = memory[(memory[PC+1] & 0xF)*2];
                memory[(((memory[PC+1] & 0xF0) >> 4)*2)+1] = memory[((memory[PC+1] & 0xF)*2)+1];
                // No SREG Updates
                PC+=2;
                break;
-            case 0x4: //cpc
+            case 0x4:
             case 0x5:
             case 0x6:
-            case 0x7:
+            case 0x7: //cpc
                result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                result -= SREG.C == SET ? 1: 0;
                newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
@@ -456,6 +463,12 @@ void execProgram()
                break;
             case 0x94:
             case 0x95:
+                if((memory[PC+1] == 0x88) || (memory[PC+1] == 0xA8)) //sleep || wdr
+                {
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
                 switch(memory[PC+1] & 0x0F)
                 {
                     case 0xC:
