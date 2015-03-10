@@ -402,7 +402,7 @@ void execProgram()
                 if((memory[PC+1] & 0xF) == 0x5) //lpm (rd, z+)
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
-                    memory[result] = readMemory(2*(((memory[31] << 8) | memory[30]) >> 1) + programStart + (((memory[31] << 8) | memory[30]) & 0x1));
+                    memory[result] = readMemory(2*(((memory[31] << 8) | memory[30]) >> 1) + programStart + ((((memory[31] << 8) | memory[30]) & 0x1) == 0 ? 1: 0));
                     // No SREG Updates
                     if(memory[30] < 0xFF)
                     {
