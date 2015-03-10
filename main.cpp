@@ -404,6 +404,15 @@ void execProgram()
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
                     memory[result] = readMemory(2*(((memory[31] << 8) | memory[30]) >> 1) + programStart);
                     // No SREG Updates
+                    if(memory[30] < 0xFF)
+                    {
+                        memory[30] = memory[30]+1;
+                    }
+                    else
+                    {
+                        memory[31] = memory[31]+1;
+                        memory[30] = 0x00;
+                    }
                     PC+=2;
                 }
                 if((memory[PC+1] & 0xF) == 0x0) //lds
@@ -426,7 +435,6 @@ void execProgram()
                    result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
                    memory[(memory[27] << 8) | memory[26]] = memory[result];
                    // No SREG Updates
-                   assert(memory[26] < 0xFF);
                    if(memory[26] < 0xFF)
                    {
                        memory[26] = memory[26]+1;
