@@ -53,14 +53,15 @@ uint16_t PC;
 status SREG;
 
 //API
-void engineInit();
-void loadProgram();
-void execProgram();
+extern "C" void loadProgram();
+extern "C" void engineInit();
+extern "C" void execProgram();
+
 uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
 void pushStatus(status& newStatus);
 
-extern "C" int32_t workFlow()
+int32_t workFlow()
 {
     loadProgram();
 
