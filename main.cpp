@@ -53,7 +53,8 @@ uint16_t PC;
 status SREG;
 
 //API
-extern "C" void loadProgram();
+extern "C" void loadProgram(uint8_t* binary);
+void loadDefaultProgram();
 extern "C" void engineInit();
 extern "C" void execProgram();
 
@@ -63,7 +64,22 @@ void pushStatus(status& newStatus);
 
 int32_t workFlow()
 {
-    loadProgram();
+    FILE* executable = NULL;
+    if(cachedArgc > 1) executable = fopen(cachedArgv[1],"rb");
+    if(executable)
+    {
+        fseek(executable, 0, SEEK_END);
+        int32_t size = ftell(executable);
+        rewind(executable);
+        uint8_t* binary = (uint8_t*)malloc(size);
+        fread(binary, 1, size, executable);
+        fclose(executable);
+        loadProgram(binary);
+    }
+    else
+    {
+        loadDefaultProgram();
+    }
 
 #ifdef PROFILE
     microseconds startProfile = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
@@ -179,53 +195,9 @@ int32_t getValueFromHex(uint8_t* buffer, int32_t size)
     return value;
 }
 
-void loadProgram()
+void loadDefaultProgram()
 {
-    FILE* executable = NULL;
-    if(cachedArgc > 1) executable = fopen(cachedArgv[1],"rb");
-    if(executable)
-    {
-        fseek(executable, 0, SEEK_END);
-        int32_t size = ftell(executable);
-        rewind(executable);
-        uint8_t* binary = (uint8_t*)malloc(size);
-        fread(binary, 1, size, executable);
-        fclose(executable);
-
-        int32_t fileCursor = 0;
-        int32_t addressCursor = ATMEGA32U4_ENTRY;
-        while(true)
-        {
-            assert(binary[fileCursor++] == ':');
-            int32_t byteCount = getValueFromHex(&binary[fileCursor], 2);
-            int32_t address = getValueFromHex(&binary[fileCursor+=2], 4);
-            int32_t recordType = getValueFromHex(&binary[fileCursor+=4], 2);
-            if(recordType == 0x00)
-            {
-                while(byteCount)
-                {
-                    int32_t instr = getValueFromHex(&binary[fileCursor+=2], 2);
-                    memory[addressCursor++] = getValueFromHex(&binary[fileCursor+=2], 2);
-                    memory[addressCursor++] = instr;
-                    byteCount-=2;
-                }
-                while(binary[++fileCursor] != ':')
-                ;
-            }
-            else if(recordType == 0x01)
-            {
-                break;
-            }
-            else
-            {
-                assert(false);
-            }
-        }
-        free(binary);
-    }
-    else
-    {
-        printf("Fall back to default internal test program.\n");
+    printf("Fall back to default internal test program.\n");
     // 0:   0c 94 56 00     jmp     0xac    ; 0xac <__ctors_end>
         memory[0xB00] = 0x94;
         memory[0xB01] = 0x0C;
@@ -299,7 +271,40 @@ void loadProgram()
     //e0:   98 95           break
         memory[0xBE0] = 0x95;
         memory[0xBE1] = 0x98;
+}
+
+void loadProgram(uint8_t* binary)
+{
+    int32_t fileCursor = 0;
+    int32_t addressCursor = ATMEGA32U4_ENTRY;
+    while(true)
+    {
+        assert(binary[fileCursor++] == ':');
+        int32_t byteCount = getValueFromHex(&binary[fileCursor], 2);
+        int32_t address = getValueFromHex(&binary[fileCursor+=2], 4);
+        int32_t recordType = getValueFromHex(&binary[fileCursor+=4], 2);
+        if(recordType == 0x00)
+        {
+            while(byteCount)
+            {
+                int32_t instr = getValueFromHex(&binary[fileCursor+=2], 2);
+                memory[addressCursor++] = getValueFromHex(&binary[fileCursor+=2], 2);
+                memory[addressCursor++] = instr;
+                byteCount-=2;
+            }
+            while(binary[++fileCursor] != ':')
+            ;
+        }
+        else if(recordType == 0x01)
+        {
+            break;
+        }
+        else
+        {
+            assert(false);
+        }
     }
+    free(binary);
 }
 
 int8_t generateVStatus(uint8_t firstOp, uint8_t secondOp)
