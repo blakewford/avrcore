@@ -400,6 +400,20 @@ void execProgram()
                newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
                PC+=2;
                break;
+            case 0xC:
+            case 0xD:
+            case 0xE:
+            case 0xF: //add
+               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] + memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.C = result > 0xFF ? SET: CLR;
+               memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
+               PC+=2;
+               break;
             case 0x24:
             case 0x25:
             case 0x26:
