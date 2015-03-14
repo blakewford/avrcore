@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#ifdef EMSCRIPTEN
+#include "emscripten.h"
+#endif
 
 #ifdef PROFILE
 #include <chrono>
@@ -54,6 +57,7 @@ status SREG;
 
 //API
 extern "C" void loadProgram(uint8_t* binary);
+extern "C" void loadPartialProgram(uint8_t* binary);
 void loadDefaultProgram();
 extern "C" void engineInit();
 extern "C" void execProgram();
@@ -62,8 +66,19 @@ uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
 void pushStatus(status& newStatus);
 
-int32_t workFlow()
+#ifndef LIBRARY
+
+int32_t main(int32_t argc, char** argv)
 {
+    cachedArgc = argc;
+    char* storagePointer = argvStorage;
+    while(argc--)
+    {
+        cachedArgv[argc] = storagePointer;
+        int32_t length = strlen(argv[argc]);
+        strcat(storagePointer, argv[argc]);
+        storagePointer+=(length+1);
+    }
     FILE* executable = NULL;
     if(cachedArgc > 1) executable = fopen(cachedArgv[1],"rb");
     if(executable)
@@ -96,20 +111,7 @@ int32_t workFlow()
     return 0;
 }
 
-int32_t main(int32_t argc, char** argv)
-{
-    cachedArgc = argc;
-    char* storagePointer = argvStorage;
-    while(argc--)
-    {
-        cachedArgv[argc] = storagePointer;
-        int32_t length = strlen(argv[argc]);
-        strcat(storagePointer, argv[argc]);
-        storagePointer+=(length+1);
-    }
-
-    return workFlow();
-}
+#endif
 
 uint8_t readMemory(int32_t address)
 {
@@ -121,7 +123,11 @@ void writeMemory(int32_t address, int32_t value)
     switch(address)
     {
         case ATMEGA32U4_PORTB_ADDRESS:
+#ifdef EMSCRIPTEN
+            emscripten_run_script("console.log('PortB')");
+#else
             printf("PortB 0x%X\n", value);
+#endif
             break;
     }
     memory[address] = value;
@@ -271,6 +277,34 @@ void loadDefaultProgram()
     //e0:   98 95           break
         memory[0xBE0] = 0x95;
         memory[0xBE1] = 0x98;
+}
+
+int32_t currentAddressCursor = ATMEGA32U4_ENTRY;
+void loadPartialProgram(uint8_t* binary)
+{
+    int32_t lineCursor = 0;
+    assert(binary[lineCursor++] == ':');
+    int32_t byteCount = getValueFromHex(&binary[lineCursor], 2);
+    int32_t address = getValueFromHex(&binary[lineCursor+=2], 4);
+    int32_t recordType = getValueFromHex(&binary[lineCursor+=4], 2);
+    if(recordType == 0x00)
+    {
+        while(byteCount)
+        {
+            int32_t instr = getValueFromHex(&binary[lineCursor+=2], 2);
+            memory[currentAddressCursor++] = getValueFromHex(&binary[lineCursor+=2], 2);
+            memory[currentAddressCursor++] = instr;
+            byteCount-=2;
+        }
+    }
+    else if(recordType == 0x01)
+    {
+        return;
+    }
+    else
+    {
+        assert(false);
+    }
 }
 
 void loadProgram(uint8_t* binary)
