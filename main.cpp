@@ -124,7 +124,9 @@ void writeMemory(int32_t address, int32_t value)
     {
         case ATMEGA32U4_PORTB_ADDRESS:
 #ifdef EMSCRIPTEN
-            emscripten_run_script("console.log('PortB')");
+            char buffer[256];
+            sprintf(buffer, "console.log('PortB %i')", value);
+            emscripten_run_script(buffer);
 #else
             printf("PortB 0x%X\n", value);
 #endif
