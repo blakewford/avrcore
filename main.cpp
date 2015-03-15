@@ -489,6 +489,12 @@ void execProgram()
                 break;
             case 0x90:
             case 0x91:
+                if((memory[PC+1] & 0xF) == 0x0) //lds
+                {
+                   memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory(((memory[PC+2] << 8) | memory[PC+3]));
+                   // No SREG Updates
+                   PC+=4;
+                }
                 if((memory[PC+1] & 0xF) == 0x5) //lpm (rd, z+)
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
@@ -505,11 +511,13 @@ void execProgram()
                     }
                     PC+=2;
                 }
-                if((memory[PC+1] & 0xF) == 0x0) //lds
+                if((memory[PC+1] & 0xF) == 0xF) //pop
                 {
-                   memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory(((memory[PC+2] << 8) | memory[PC+3]));
-                   // No SREG Updates
-                   PC+=4;
+                    result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
+                    memory[result] = memory[stackPointer];
+                    stackPointer++;
+                    // No SREG Updates
+                    PC+=2;
                 }
                 break;
             case 0x92:
@@ -565,6 +573,13 @@ void execProgram()
                         PC = programStart + (((memory[PC] & 0x1) << 21) | ((memory[PC+1] & 0xF0) << 17) | ((memory[PC+1] & 0x1) << 16)
                          | (memory[PC+2] << 8) | memory[PC+3])*2;
                         break;
+                }
+                if((memory[PC] == 0x95) && (memory[PC+1] == 0x8)) //ret
+                {
+                    result = ++stackPointer;
+                    // No SREG Updates
+                    PC = programStart + ((memory[result] << 8) | (memory[++stackPointer]));
+                    PC++;
                 }
                 break;
             case 0xB0:
