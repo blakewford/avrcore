@@ -1,4 +1,3 @@
-
 #include <thread>
 #include <stdlib.h>
 #include <stdint.h>
@@ -627,6 +626,29 @@ void execProgram()
                 PC+=2;
                 PC = (0x800 == (result & 0x800)) ? PC - (0x1000 - (2*(result^0x800))) : PC + (2*result);
                 // No SREG Updates
+                break;
+            case 0xD0:
+            case 0xD1:
+            case 0xD2:
+            case 0xD3:
+            case 0xD4:
+            case 0xD5:
+            case 0xD6:
+            case 0xD7:
+            case 0xD8:
+            case 0xD9:
+            case 0xDA:
+            case 0xDB:
+            case 0xDC:
+            case 0xDD:
+            case 0xDE:
+            case 0xDF: //rcall
+                result = ((memory[PC] & 0xF) << 8) | memory[PC+1];
+                PC+=2;
+                memory[stackPointer--] = (PC & 0xFF);
+                memory[stackPointer--] = (PC & 0xFF00) >> 8;
+                // No SREG Updates
+                PC+=result;
                 break;
             case 0xE0:
             case 0xE1:
