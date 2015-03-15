@@ -66,6 +66,17 @@ uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
 void pushStatus(status& newStatus);
 
+void platformPrint(const char* message)
+{
+#ifdef EMSCRIPTEN
+            char buffer[1024];
+            sprintf(buffer, "console.log('%s')", message);
+            emscripten_run_script(buffer);
+#else
+            printf("%s\n", message);
+#endif
+}
+
 #ifndef LIBRARY
 
 int32_t main(int32_t argc, char** argv)
@@ -101,11 +112,15 @@ int32_t main(int32_t argc, char** argv)
 #endif
 
     execProgram();
-    printf("Program Ended at Address 0x%X\n", PC);
+
+    char buffer[256];
+    sprintf(buffer, "Program Ended at Address 0x%X", PC);
+    platformPrint(buffer);
 
 #ifdef PROFILE
     microseconds endProfile = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
-    printf("Execution Time in Microseconds %lld\n", (long long)(endProfile.count()-startProfile.count()));
+    sprintf(buffer, "Execution Time in Microseconds %lld", (long long)(endProfile.count()-startProfile.count()));
+    platformPrint(buffer);
 #endif
 
     return 0;
@@ -120,15 +135,16 @@ uint8_t readMemory(int32_t address)
 
 void writeMemory(int32_t address, int32_t value)
 {
+    char buffer[256];
     switch(address)
     {
         case ATMEGA32U4_PORTB_ADDRESS:
-#ifdef EMSCRIPTEN
-            char buffer[256];
-            sprintf(buffer, "console.log('PortB %i')", value);
+#ifdef LIBRARY
+            sprintf(buffer, "writePort(0, %i)", value);
             emscripten_run_script(buffer);
 #else
-            printf("PortB 0x%X\n", value);
+            sprintf(buffer, "PortB 0x%X", value);
+            platformPrint(buffer);
 #endif
             break;
     }
@@ -205,7 +221,7 @@ int32_t getValueFromHex(uint8_t* buffer, int32_t size)
 
 void loadDefaultProgram()
 {
-    printf("Fall back to default internal test program.\n");
+    platformPrint("Fall back to default internal test program.");
     // 0:   0c 94 56 00     jmp     0xac    ; 0xac <__ctors_end>
         memory[0xB00] = 0x94;
         memory[0xB01] = 0x0C;
@@ -371,6 +387,7 @@ void execProgram()
     {
         uint16_t result;
         status newStatus;
+        char buffer[1024];
         switch(memory[PC])
         {
             case 0x0:
@@ -622,7 +639,8 @@ void execProgram()
                 // No SREG Updates
                 break;
             default:
-                printf("Instruction not implemented at address 0x%X\n", PC);
+                sprintf(buffer, "Instruction not implemented at address 0x%X", PC);
+                platformPrint(buffer);
                 assert(0);
                 break;
         }
