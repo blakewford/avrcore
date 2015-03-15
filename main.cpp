@@ -22,6 +22,10 @@ char* cachedArgv[64];
 #define ATMEGA32U4_FLASH_SIZE 32*1024
 #define ATMEGA32U4_ENTRY 0xB00
 #define ATMEGA32U4_PORTB_ADDRESS 0x25
+#define ATMEGA32U4_PORTC_ADDRESS 0x28
+#define ATMEGA32U4_PORTD_ADDRESS 0x2B
+#define ATMEGA32U4_PORTE_ADDRESS 0x2E
+#define ATMEGA32U4_PORTF_ADDRESS 0x31
 #define IO_REG_START 0x20
 #define SREG_ADDRESS 0x5F
 
@@ -141,11 +145,15 @@ void writeMemory(int32_t address, int32_t value)
     switch(address)
     {
         case ATMEGA32U4_PORTB_ADDRESS:
+        case ATMEGA32U4_PORTC_ADDRESS:
+        case ATMEGA32U4_PORTD_ADDRESS:
+        case ATMEGA32U4_PORTE_ADDRESS:
+        case ATMEGA32U4_PORTF_ADDRESS:
 #ifdef LIBRARY
-            sprintf(buffer, "writePort(0, %i)", value);
+            sprintf(buffer, "writePort(%i, %i)", (address-ATMEGA32U4_PORTB_ADDRESS)/3, value);
             emscripten_run_script(buffer);
 #else
-            sprintf(buffer, "PortB 0x%X", value);
+            sprintf(buffer, "Port %i 0x%X", (address-ATMEGA32U4_PORTB_ADDRESS)/3, value);
             platformPrint(buffer);
 #endif
             break;
