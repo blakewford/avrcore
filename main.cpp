@@ -1,3 +1,5 @@
+
+#include <thread>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -645,5 +647,6 @@ void execProgram()
                 break;
         }
         pushStatus(newStatus);
+        std::this_thread::yield();
     }
 }
