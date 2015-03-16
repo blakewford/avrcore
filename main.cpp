@@ -483,6 +483,30 @@ void execProgram()
                 newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]) ? SET: CLR;
                 PC+=2;
                 break;
+            case 0x70:
+            case 0x71:
+            case 0x72:
+            case 0x73:
+            case 0x74:
+            case 0x75:
+            case 0x76:
+            case 0x77:
+            case 0x78:
+            case 0x79:
+            case 0x7A:
+            case 0x7B:
+            case 0x7C:
+            case 0x7D:
+            case 0x7E:
+            case 0x7F: //andi
+                result = ((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF);
+                memory[16+((memory[PC+1] & 0xF0) >> 4)] &= result;
+                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                newStatus.Z = result == 0x00 ? SET: CLR;
+                newStatus.V = CLR;
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                PC+=2;
+                break;
             case 0x80:
             case 0x81:
                 if((memory[PC+1] & 0xF) == 0x0) //ld z
