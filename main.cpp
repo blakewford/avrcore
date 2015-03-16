@@ -397,6 +397,9 @@ void execProgram()
         uint16_t result;
         status newStatus;
         char buffer[1024];
+        //sprintf(buffer, "0x%X Instruction 0x%X 0x%X", PC, memory[PC], memory[PC+1]);
+        //platformPrint(buffer);
+        memset(buffer, 0, 1024);
         switch(memory[PC])
         {
             case 0x0:
@@ -581,8 +584,7 @@ void execProgram()
                 {
                     result = ++stackPointer;
                     // No SREG Updates
-                    PC = programStart + ((memory[result] << 8) | (memory[++stackPointer]));
-                    PC++;
+                    PC = ((memory[result] << 8) | (memory[++stackPointer]));
                 }
                 break;
             case 0xB0:
