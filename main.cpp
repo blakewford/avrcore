@@ -400,6 +400,9 @@ void execProgram()
         //sprintf(buffer, "0x%X Instruction 0x%X 0x%X", PC, memory[PC], memory[PC+1]);
         //platformPrint(buffer);
         memset(buffer, 0, 1024);
+#ifndef EMSCRIPTEN
+        system_clock::time_point syncPoint = system_clock::now() + nanoseconds(100);
+#endif
         switch(memory[PC])
         {
             case 0x0:
@@ -698,6 +701,10 @@ void execProgram()
                 break;
         }
         pushStatus(newStatus);
+#ifdef EMSCRIPTEN
         std::this_thread::yield();
+#else
+        std::this_thread::sleep_until(syncPoint);
+#endif
     }
 }
