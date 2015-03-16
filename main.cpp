@@ -568,9 +568,13 @@ void execProgram()
                         break;
                     case 0xE:
                     case 0xF: //call
-                        // No SREG Updates
-                        PC = programStart + (((memory[PC] & 0x1) << 21) | ((memory[PC+1] & 0xF0) << 17) | ((memory[PC+1] & 0x1) << 16)
+                        result = programStart + (((memory[PC] & 0x1) << 21) | ((memory[PC+1] & 0xF0) << 17) | ((memory[PC+1] & 0x1) << 16)
                          | (memory[PC+2] << 8) | memory[PC+3])*2;
+                        PC += 4;
+                        memory[stackPointer--] = (PC & 0xFF);
+                        memory[stackPointer--] = (PC & 0xFF00) >> 8;
+                        // No SREG Updates
+                        PC = result;
                         break;
                 }
                 if((memory[PC] == 0x95) && (memory[PC+1] == 0x8)) //ret
