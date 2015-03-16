@@ -483,6 +483,15 @@ void execProgram()
                 newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]) ? SET: CLR;
                 PC+=2;
                 break;
+            case 0x80:
+            case 0x81:
+                if((memory[PC+1] & 0xF) == 0x0) //ld z
+                {
+                    memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory((memory[31] << 8) | memory[30]);
+                    // No SREG Updates
+                    PC+=2;
+                }
+                break;
             case 0x82:
             case 0x83:
                 if((memory[PC+1] & 0xF) == 0x0) //st (std) z
