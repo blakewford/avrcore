@@ -66,6 +66,7 @@ extern "C" void loadPartialProgram(uint8_t* binary);
 void loadDefaultProgram();
 extern "C" void engineInit();
 extern "C" void execProgram();
+extern "C" int32_t fetch();
 
 uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
@@ -116,6 +117,7 @@ int32_t main(int32_t argc, char** argv)
     microseconds startProfile = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
 #endif
 
+    engineInit();
     execProgram();
 
     char buffer[256];
@@ -206,6 +208,8 @@ void engineInit()
     SREG.H = CLR;
     SREG.T = CLR;
     SREG.I = CLR;
+
+    PC = programStart;
 }
 
 int32_t getValueFromHex(uint8_t* buffer, int32_t size)
@@ -391,9 +395,15 @@ int8_t generateHStatus(uint8_t firstOp, uint8_t secondOp)
 
 void execProgram()
 {
-    PC = programStart;
-    while((PC < ATMEGA32U4_FLASH_SIZE) && !((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
-    {
+    while(fetch())
+        ;
+}
+
+int32_t fetch()
+{
+        if((PC >= ATMEGA32U4_FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
+            return false;
+
         uint16_t result;
         status newStatus;
         char buffer[1024];
@@ -739,5 +749,5 @@ void execProgram()
 #else
         std::this_thread::sleep_until(syncPoint);
 #endif
-    }
+        return true;
 }
