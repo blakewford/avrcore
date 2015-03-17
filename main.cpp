@@ -67,6 +67,7 @@ void loadDefaultProgram();
 extern "C" void engineInit();
 extern "C" void execProgram();
 extern "C" int32_t fetch();
+extern "C" int32_t fetchN(int32_t n);
 
 uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
@@ -397,6 +398,18 @@ void execProgram()
 {
     while(fetch())
         ;
+}
+
+int32_t fetchN(int32_t n)
+{
+    bool success = true;
+    while(success && n)
+    {
+        success = fetch();
+        n--;
+    }
+
+    return success;
 }
 
 int32_t fetch()
