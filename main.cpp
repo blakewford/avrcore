@@ -26,7 +26,9 @@ char* cachedArgv[64];
 #define ATMEGA32U4_PORTE_ADDRESS 0x2E
 #define ATMEGA32U4_PORTF_ADDRESS 0x31
 #define IO_REG_START 0x20
-#define SREG_ADDRESS 0x5F
+#define SREG_ADDRESS 0x3F
+#define SPH_ADDRESS  0x3E
+#define SPL_ADDRESS  0x3D
 
 //Globals
 #define CLR 0
@@ -138,6 +140,14 @@ int32_t main(int32_t argc, char** argv)
 
 uint8_t readMemory(int32_t address)
 {
+    if(address == SPH_ADDRESS)
+    {
+        return ((stackPointer & 0xFF00) >> 8);
+    }
+    if(address == SPH_ADDRESS)
+    {
+        return (stackPointer & 0xFF);
+    }
     return memory[address];
 }
 
@@ -661,8 +671,7 @@ int32_t fetch()
             case 0xB5:
             case 0xB6:
             case 0xB7: //in
-                memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)]
-                 = memory[(((memory[PC] & 0x07) >> 1) << 4) | (memory[PC+1] & 0x0F)];
+                memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory((((memory[PC] & 0x07) >> 1) << 4) | (memory[PC+1] & 0x0F));
                 // No SREG Updates
                 PC+=2;
                 break;
