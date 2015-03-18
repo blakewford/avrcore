@@ -479,6 +479,18 @@ int32_t fetch()
                memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
                PC+=2;
                break;
+            case 0x20:
+            case 0x21:
+            case 0x22:
+            case 0x23: //and
+               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] & memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result;
+               newStatus.V = CLR;
+               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+               PC+=2;
+               break;
             case 0x24:
             case 0x25:
             case 0x26:
