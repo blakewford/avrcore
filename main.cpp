@@ -26,9 +26,9 @@ char* cachedArgv[64];
 #define ATMEGA32U4_PORTE_ADDRESS 0x2E
 #define ATMEGA32U4_PORTF_ADDRESS 0x31
 #define IO_REG_START 0x20
-#define SREG_ADDRESS 0x3F
-#define SPH_ADDRESS  0x3E
-#define SPL_ADDRESS  0x3D
+#define SREG_ADDRESS 0x5F
+#define SPH_ADDRESS  0x5E
+#define SPL_ADDRESS  0x5D
 
 //Globals
 #define CLR 0
@@ -144,7 +144,7 @@ uint8_t readMemory(int32_t address)
     {
         return ((stackPointer & 0xFF00) >> 8);
     }
-    if(address == SPH_ADDRESS)
+    if(address == SPL_ADDRESS)
     {
         return (stackPointer & 0xFF);
     }
@@ -443,8 +443,9 @@ int32_t fetch()
                 {
                     // No SREG Updates
                     PC+=2;
+                    break;
                 }
-                break;
+                assert(0);
             case 0x1: //movw
                memory[((memory[PC+1] & 0xF0) >> 4)*2] = memory[(memory[PC+1] & 0xF)*2];
                memory[(((memory[PC+1] & 0xF0) >> 4)*2)+1] = memory[((memory[PC+1] & 0xF)*2)+1];
@@ -560,14 +561,16 @@ int32_t fetch()
                     memory[result] = readMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)));
                     // No SREG Updates
                     PC+=2;
+                    break;
                 }
                 if((memory[PC+1] & 0xF) == 0x0) //ld z
                 {
                     memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory((memory[31] << 8) | memory[30]);
                     // No SREG Updates
                     PC+=2;
+                    break;
                 }
-                break;
+                assert(0);
             case 0x82:
             case 0x83:
                 if((memory[PC+1] & 0xF) >= 0x8) //st (std) y
@@ -576,14 +579,16 @@ int32_t fetch()
                     writeMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)), result);
                     // No SREG Updates
                     PC+=2;
+                    break;
                 }
                 if((memory[PC+1] & 0xF) == 0x0) //st (std) z
                 {
                     writeMemory((memory[31] << 8) | memory[30], memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)]);
                     // No SREG Updates
                     PC+=2;
+                    break;
                 }
-                break;
+                assert(0);
             case 0x90:
             case 0x91:
                 if((memory[PC+1] & 0xF) == 0x0) //lds
@@ -591,6 +596,7 @@ int32_t fetch()
                    memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory(((memory[PC+2] << 8) | memory[PC+3]));
                    // No SREG Updates
                    PC+=4;
+                   break;
                 }
                 if((memory[PC+1] & 0xF) == 0x5) //lpm (rd, z+)
                 {
@@ -607,6 +613,7 @@ int32_t fetch()
                         memory[30] = 0x00;
                     }
                     PC+=2;
+                    break;
                 }
                 if((memory[PC+1] & 0xF) == 0xF) //pop
                 {
@@ -615,8 +622,9 @@ int32_t fetch()
                     stackPointer++;
                     // No SREG Updates
                     PC+=2;
+                    break;
                 }
-                break;
+                assert(0);
             case 0x92:
             case 0x93:
                if((memory[PC+1] & 0xF) == 0x0) //sts
@@ -624,6 +632,7 @@ int32_t fetch()
                   writeMemory(((memory[PC+2] << 8) | memory[PC+3]), memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)]);
                   // No SREG Updates
                   PC+=4;
+                  break;
                }
                if((memory[PC+1] & 0xF) == 0xF) //push
                {
@@ -631,6 +640,7 @@ int32_t fetch()
                    stackPointer--;
                    // No SREG Updates
                    PC+=2;
+                   break;
                }
                if((memory[PC+1] & 0xF) == 0xD) //st x+
                {
@@ -647,14 +657,22 @@ int32_t fetch()
                        memory[26] = 0x00;
                    }
                    PC+=2;
+                   break;
                }
-               break;
+               assert(0);
             case 0x94:
             case 0x95:
                 if((memory[PC+1] == 0x88) || (memory[PC+1] == 0xA8)) //sleep || wdr
                 {
                     // No SREG Updates
                     PC+=2;
+                    break;
+                }
+                if((memory[PC] == 0x95) && (memory[PC+1] == 0x8)) //ret
+                {
+                    result = ++stackPointer;
+                    // No SREG Updates
+                    PC = ((memory[result] << 8) | (memory[++stackPointer]));
                     break;
                 }
                 switch(memory[PC+1] & 0x0F)
@@ -674,14 +692,10 @@ int32_t fetch()
                         // No SREG Updates
                         PC = result;
                         break;
+                    default:
+                        assert(0);
+                        break;
                 }
-                if((memory[PC] == 0x95) && (memory[PC+1] == 0x8)) //ret
-                {
-                    result = ++stackPointer;
-                    // No SREG Updates
-                    PC = ((memory[result] << 8) | (memory[++stackPointer]));
-                }
-                break;
             case 0xB0:
             case 0xB1:
             case 0xB2:
@@ -690,7 +704,7 @@ int32_t fetch()
             case 0xB5:
             case 0xB6:
             case 0xB7: //in
-                memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory((((memory[PC] & 0x07) >> 1) << 4) | (memory[PC+1] & 0x0F));
+                memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = readMemory(((((memory[PC] & 0x07) >> 1) << 4) | (memory[PC+1] & 0x0F)) + IO_REG_START);
                 // No SREG Updates
                 PC+=2;
                 break;
@@ -781,10 +795,11 @@ int32_t fetch()
                         result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
                         PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
                     }
+                    // No SREG Updates
                     PC+=2;
+                    break;
                 }
-                // No SREG Updates
-                break;
+                assert(0);
             default:
                 sprintf(buffer, "Instruction not implemented at address 0x%X", PC);
                 platformPrint(buffer);
