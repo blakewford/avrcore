@@ -542,6 +542,30 @@ int32_t fetch()
                 newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]) ? SET: CLR;
                 PC+=2;
                 break;
+            case 0x60:
+            case 0x61:
+            case 0x62:
+            case 0x63:
+            case 0x64:
+            case 0x65:
+            case 0x66:
+            case 0x67:
+            case 0x68:
+            case 0x69:
+            case 0x6A:
+            case 0x6B:
+            case 0x6C:
+            case 0x6D:
+            case 0x6E:
+            case 0x6F: //ori
+                result = ((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF);
+                memory[16+((memory[PC+1] & 0xF0) >> 4)] |= result;
+                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                newStatus.Z = result == 0x00 ? SET: CLR;
+                newStatus.V = CLR;
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                PC+=2;
+                break;
             case 0x70:
             case 0x71:
             case 0x72:
