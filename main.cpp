@@ -58,7 +58,6 @@ struct status
 };
 uint8_t memory[ATMEGA32U4_FLASH_SIZE];
 int32_t programStart = ATMEGA32U4_ENTRY;
-int32_t stackPointer = programStart - 1;
 uint16_t PC;
 status SREG;
 
@@ -140,14 +139,6 @@ int32_t main(int32_t argc, char** argv)
 
 uint8_t readMemory(int32_t address)
 {
-    if(address == SPH_ADDRESS)
-    {
-        return ((stackPointer & 0xFF00) >> 8);
-    }
-    if(address == SPL_ADDRESS)
-    {
-        return (stackPointer & 0xFF);
-    }
     return memory[address];
 }
 
@@ -221,6 +212,9 @@ void engineInit()
     SREG.I = CLR;
 
     PC = programStart;
+    int32_t SP = programStart - 1;
+    memory[SPH_ADDRESS] = (SP & 0xFF00) >> 8;
+    memory[SPL_ADDRESS] = (SP & 0xFF);
 }
 
 int32_t getValueFromHex(uint8_t* buffer, int32_t size)
@@ -422,6 +416,22 @@ int32_t fetchN(int32_t n)
     return success;
 }
 
+void incrementStackPointer()
+{
+    int32_t SP = (memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS];
+    SP++;
+    memory[SPH_ADDRESS] = (SP & 0xFF00) >> 8;
+    memory[SPL_ADDRESS] = (SP & 0xFF);
+}
+
+void decrementStackPointer()
+{
+    int32_t SP = (memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS];
+    SP--;
+    memory[SPH_ADDRESS] = (SP & 0xFF00) >> 8;
+    memory[SPL_ADDRESS] = (SP & 0xFF);
+}
+
 int32_t fetch()
 {
         if((PC >= ATMEGA32U4_FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
@@ -618,8 +628,8 @@ int32_t fetch()
                 if((memory[PC+1] & 0xF) == 0xF) //pop
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
-                    memory[result] = memory[stackPointer];
-                    stackPointer++;
+                    memory[result] = memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]];
+                    incrementStackPointer();
                     // No SREG Updates
                     PC+=2;
                     break;
@@ -636,8 +646,8 @@ int32_t fetch()
                }
                if((memory[PC+1] & 0xF) == 0xF) //push
                {
-                   memory[stackPointer] = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
-                   stackPointer--;
+                   memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                   decrementStackPointer();
                    // No SREG Updates
                    PC+=2;
                    break;
@@ -670,9 +680,11 @@ int32_t fetch()
                 }
                 if((memory[PC] == 0x95) && (memory[PC+1] == 0x8)) //ret
                 {
-                    result = ++stackPointer;
+                    incrementStackPointer();
+                    result = (memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS];
                     // No SREG Updates
-                    PC = ((memory[result] << 8) | (memory[++stackPointer]));
+                    incrementStackPointer();
+                    PC = ((memory[result] << 8) | (memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]]));
                     break;
                 }
                 switch(memory[PC+1] & 0x0F)
@@ -687,8 +699,10 @@ int32_t fetch()
                         result = programStart + (((memory[PC] & 0x1) << 21) | ((memory[PC+1] & 0xF0) << 17) | ((memory[PC+1] & 0x1) << 16)
                          | (memory[PC+2] << 8) | memory[PC+3])*2;
                         PC += 4;
-                        memory[stackPointer--] = (PC & 0xFF);
-                        memory[stackPointer--] = (PC & 0xFF00) >> 8;
+                        memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF);
+                        decrementStackPointer();
+                        memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF00) >> 8;
+                        decrementStackPointer();
                         // No SREG Updates
                         PC = result;
                         break;
@@ -759,8 +773,10 @@ int32_t fetch()
             case 0xDF: //rcall
                 result = ((memory[PC] & 0xF) << 8) | memory[PC+1];
                 PC+=2;
-                memory[stackPointer--] = (PC & 0xFF);
-                memory[stackPointer--] = (PC & 0xFF00) >> 8;
+                memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF);
+                decrementStackPointer();
+                memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF00) >> 8;
+                decrementStackPointer();
                 // No SREG Updates
                 PC+=result;
                 break;
