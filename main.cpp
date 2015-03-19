@@ -29,6 +29,8 @@ char* cachedArgv[64];
 #define SREG_ADDRESS 0x5F
 #define SPH_ADDRESS  0x5E
 #define SPL_ADDRESS  0x5D
+#define SPSR_ADDRESS 0x4D
+#define SPIF_BIT 1<<7
 
 //Globals
 #define CLR 0
@@ -215,6 +217,7 @@ void engineInit()
     int32_t SP = programStart - 1;
     memory[SPH_ADDRESS] = (SP & 0xFF00) >> 8;
     memory[SPL_ADDRESS] = (SP & 0xFF);
+    memory[SPSR_ADDRESS] = SPIF_BIT;
 }
 
 int32_t getValueFromHex(uint8_t* buffer, int32_t size)
@@ -835,6 +838,7 @@ int32_t fetch()
                 break;
         }
         pushStatus(newStatus);
+        memory[SPSR_ADDRESS] |= SPIF_BIT;
 #ifdef EMSCRIPTEN
         std::this_thread::yield();
 #else
