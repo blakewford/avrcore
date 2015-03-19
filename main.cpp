@@ -29,10 +29,14 @@ char* cachedArgv[64];
 #define SREG_ADDRESS 0x5F
 #define SPH_ADDRESS  0x5E
 #define SPL_ADDRESS  0x5D
+#define SPMCSR_ADDRESS 0x57
 #define SPSR_ADDRESS 0x4D
 #define SPIF_BIT 1<<7
 
 //Globals
+#define MANUFACTURER_ID 0xBF
+#define SIGRD 1<<5
+#define SPMEN 1<<0
 #define CLR 0
 #define SET 1
 #define IGNORE 2
@@ -161,6 +165,12 @@ void writeMemory(int32_t address, int32_t value)
             sprintf(buffer, "Port %i 0x%X", (address-ATMEGA32U4_PORTB_ADDRESS)/3, value);
             platformPrint(buffer);
 #endif
+            break;
+        case SPMCSR_ADDRESS:
+            if(value == (SIGRD|SPMEN))
+            {
+                 memory[((memory[31] << 8) | memory[30]) + programStart + 1] = MANUFACTURER_ID;
+            }
             break;
     }
     memory[address] = value;
