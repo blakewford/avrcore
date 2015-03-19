@@ -816,6 +816,17 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
+                if((((memory[PC] & 0x0C) >> 2) == 0x1) && ((memory[PC+1] & 0x7) == 0x4)) //brge
+                {
+                    if(SREG.S == CLR)
+                    {
+                        result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
+                        PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
+                    }
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
                 assert(0);
             default:
                 sprintf(buffer, "Instruction not implemented at address 0x%X", PC);
