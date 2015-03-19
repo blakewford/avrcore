@@ -710,6 +710,7 @@ int32_t fetch()
                         assert(0);
                         break;
                 }
+                break;
             case 0xB0:
             case 0xB1:
             case 0xB2:
