@@ -846,6 +846,22 @@ int32_t fetch()
                 // No SREG Updates
                 PC+=2;
                 break;
+            case 0xF0:
+            case 0xF1:
+            case 0xF2:
+            case 0xF3:
+                if((((memory[PC] & 0x0C) >> 2) == 0x0) && ((memory[PC+1] & 0x7) == 0x1)) //breq
+                {
+                    if(SREG.Z == SET)
+                    {
+                        result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
+                        PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
+                    }
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
+                assert(0);
             case 0xF4:
             case 0xF5:
             case 0xF6:
