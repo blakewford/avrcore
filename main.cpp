@@ -527,6 +527,13 @@ int32_t fetch()
                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                PC+=2;
                break;
+            case 0x2C:
+            case 0x2D:
+            case 0x2E:
+            case 0x2F: //mov
+               memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)];
+               PC+=2;
+               break;
             case 0x30:
             case 0x31:
             case 0x32:
