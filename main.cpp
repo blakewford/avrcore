@@ -503,6 +503,19 @@ int32_t fetch()
                memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
                PC+=2;
                break;
+            case 0x14: //cp
+            case 0x15:
+            case 0x16:
+            case 0x17:
+               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+               newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+               PC+=2;
+               break;
             case 0x20:
             case 0x21:
             case 0x22:
@@ -809,8 +822,8 @@ int32_t fetch()
                         break;
                 }
                 break;
-            case 0x96:
-            case 0x97:
+            case 0x96: //adiw
+            case 0x97: //sbiw
                 result = ((memory[PC+1] & 0x30) >> 4);
                 switch(result)
                 {
