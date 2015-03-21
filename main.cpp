@@ -68,13 +68,14 @@ uint16_t PC;
 status SREG;
 
 //API
-extern "C" void loadProgram(uint8_t* binary);
 extern "C" void loadPartialProgram(uint8_t* binary);
-void loadDefaultProgram();
 extern "C" void engineInit();
-extern "C" void execProgram();
-extern "C" int32_t fetch();
 extern "C" int32_t fetchN(int32_t n);
+
+void loadProgram(uint8_t* binary);
+void loadDefaultProgram();
+void execProgram();
+int32_t fetch();
 
 uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
