@@ -809,6 +809,7 @@ int32_t fetch()
                         break;
                 }
                 break;
+            case 0x96:
             case 0x97:
                 result = ((memory[PC+1] & 0x30) >> 4);
                 switch(result)
@@ -831,7 +832,14 @@ int32_t fetch()
                 result = (memory[result+1] << 8) | memory[result];
                 newStatus.V = generateVStatus(result, (((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF)));
                 newStatus.C = abs((((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF))) > abs(result) ? SET: CLR;
-                result = result - (((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF));
+                if(memory[PC] == 0x96)
+                {
+                    result = result + (((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF));
+                }
+                if(memory[PC] == 0x97)
+                {
+                    result = result - (((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF));
+                }
                 newStatus.N = ((result & 0x8000) > 0) ? SET: CLR;
                 newStatus.Z = result == 0x0000 ? SET: CLR;
                 newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
