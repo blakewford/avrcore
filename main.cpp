@@ -724,6 +724,12 @@ int32_t fetch()
                assert(0);
             case 0x94:
             case 0x95:
+                if((memory[PC] == 0x94) && (memory[PC+1] == 0xF8)) //cli
+                {
+                    newStatus.I = CLR;
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC+1] == 0x88) || (memory[PC+1] == 0xA8)) //sleep || wdr
                 {
                     // No SREG Updates
