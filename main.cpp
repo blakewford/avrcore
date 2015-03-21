@@ -763,6 +763,55 @@ int32_t fetch()
                         break;
                 }
                 break;
+            case 0x97:
+                result = ((memory[PC+1] & 0x30) >> 4);
+                switch(result)
+                {
+                    case 0:
+                        result = 24;
+                        break;
+                    case 1:
+                        result = 26;
+                        break;
+                    case 2:
+                        result = 28;
+                        break;
+                    case 3:
+                        result = 30;
+                        break;
+                    default:
+                        assert(0);
+                }
+                result = (memory[result+1] << 8) | memory[result];
+                newStatus.V = generateVStatus(result, (((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF)));
+                newStatus.C = abs((((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF))) > abs(result) ? SET: CLR;
+                result = result - (((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF));
+                newStatus.N = ((result & 0x8000) > 0) ? SET: CLR;
+                newStatus.Z = result == 0x0000 ? SET: CLR;
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                switch((memory[PC+1] & 0x30) >> 4)
+                {
+                    case 0:
+                        memory[24] = result & 0xFF;
+                        memory[25] = (result & 0xFF00) >> 8;
+                        break;
+                    case 1:
+                        memory[26] = result & 0xFF;
+                        memory[27] = (result & 0xFF00) >> 8;
+                        break;
+                    case 2:
+                        memory[28] = result & 0xFF;
+                        memory[29] = (result & 0xFF00) >> 8;
+                        break;
+                    case 3:
+                        memory[30] = result & 0xFF;
+                        memory[31] = (result & 0xFF00) >> 8;
+                        break;
+                    default:
+                        assert(0);
+                }
+                PC+=2;
+                break;
             case 0xB0:
             case 0xB1:
             case 0xB2:
