@@ -734,8 +734,8 @@ int32_t fetch()
                 if((memory[PC+1] & 0xF) == 0xF) //pop
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
-                    memory[result] = memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]];
                     incrementStackPointer();
+                    memory[result] = memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]];
                     // No SREG Updates
                     PC+=2;
                     break;
