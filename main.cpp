@@ -746,6 +746,23 @@ int32_t fetch()
                    PC+=4;
                    break;
                 }
+                if((memory[PC+1] & 0xF) == 0x1) //ld z+
+                {
+                    result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
+                    memory[result] = readMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)));
+                    // No SREG Updates
+                    if(memory[30] < 0xFF)
+                    {
+                        memory[30] = memory[30]+1;
+                    }
+                    else
+                    {
+                        memory[31] = memory[31]+1;
+                        memory[30] = 0x00;
+                    }
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC+1] & 0xF) == 0x4) //lpm (rd, z)
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
