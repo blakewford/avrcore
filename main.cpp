@@ -25,11 +25,13 @@ char* cachedArgv[64];
 #define ATMEGA32U4_PORTD_ADDRESS 0x2B
 #define ATMEGA32U4_PORTE_ADDRESS 0x2E
 #define ATMEGA32U4_PORTF_ADDRESS 0x31
+#define DMA_START_ADDRESS 0x7FF6
 #define IO_REG_START 0x20
 #define SREG_ADDRESS 0x5F
 #define SPH_ADDRESS  0x5E
 #define SPL_ADDRESS  0x5D
 #define SPMCSR_ADDRESS 0x57
+#define SDR_ADDRESS 0x4E
 #define SPSR_ADDRESS 0x4D
 #define SPIF_BIT 1<<7
 
@@ -172,6 +174,15 @@ void writeMemory(int32_t address, int32_t value)
             {
                  memory[((memory[31] << 8) | memory[30]) + programStart + 1] = MANUFACTURER_ID;
             }
+            break;
+        case SDR_ADDRESS:
+#ifdef LIBRARY
+            sprintf(buffer, "peripheralSPIWrite(%i)", value);
+            emscripten_run_script(buffer);
+#else
+            sprintf(buffer, "SPI Transmit %i", value);
+            platformPrint(buffer);
+#endif
             break;
     }
     memory[address] = value;
