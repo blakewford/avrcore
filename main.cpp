@@ -531,6 +531,21 @@ int32_t fetch()
                memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
                PC+=2;
                break;
+            case 0x1C:
+            case 0x1D:
+            case 0x1E:
+            case 0x1F: //adc
+               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] + memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               result += SREG.C == SET ? 1: 0;
+               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+               newStatus.C = result > 0xFF ? SET: CLR;
+               memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
+               PC+=2;
+               break;
             case 0x20:
             case 0x21:
             case 0x22:
