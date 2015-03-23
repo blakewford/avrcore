@@ -858,6 +858,16 @@ int32_t fetch()
                 }
                 switch(memory[PC+1] & 0x0F)
                 {
+                    case 0x0: //com
+                        result = ~memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
+                        memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result;
+                        newStatus.V = CLR;
+                        newStatus.C = SET;
+                        newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                        newStatus.Z = result == 0x00 ? SET: CLR;
+                        newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                        PC+=2;
+                        break;
                     case 0xC:
                     case 0xD: //jmp
                         // No SREG Updates
