@@ -504,10 +504,10 @@ int32_t fetch()
                memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
                PC+=2;
                break;
-            case 0x14: //cp
+            case 0x14:
             case 0x15:
             case 0x16:
-            case 0x17:
+            case 0x17: //cp
                result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
@@ -515,6 +515,20 @@ int32_t fetch()
                newStatus.Z = result == 0x00 ? SET: CLR;
                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+               PC+=2;
+               break;
+            case 0x18:
+            case 0x19:
+            case 0x1A:
+            case 0x1B: //sub
+               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+               memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
                PC+=2;
                break;
             case 0x20:
@@ -1014,6 +1028,17 @@ int32_t fetch()
                 if((((memory[PC] & 0x0C) >> 2) == 0x0) && ((memory[PC+1] & 0x7) == 0x1)) //breq
                 {
                     if(SREG.Z == SET)
+                    {
+                        result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
+                        PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
+                    }
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
+                if((((memory[PC] & 0x0C) >> 2) == 0x0) && ((memory[PC+1] & 0x7) == 0x4)) //brlt
+                {
+                    if(SREG.S == SET)
                     {
                         result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
                         PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
