@@ -177,7 +177,7 @@ void writeMemory(int32_t address, int32_t value)
             break;
         case SDR_ADDRESS:
 #ifdef LIBRARY
-            sprintf(buffer, "peripheralSPIWrite(%i)", value);
+            sprintf(buffer, "writeSPI(%i)", value);
             emscripten_run_script(buffer);
 #else
             sprintf(buffer, "SPI Transmit %i", value);
@@ -437,6 +437,11 @@ int32_t fetchN(int32_t n)
         success = fetch();
         n--;
     }
+#ifdef LIBRARY
+    char buffer[1024];
+    sprintf(buffer, "refreshUI()");
+    emscripten_run_script(buffer);
+#endif
 
     return success;
 }
