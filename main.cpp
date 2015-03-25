@@ -438,9 +438,7 @@ int32_t fetchN(int32_t n)
         n--;
     }
 #ifdef LIBRARY
-    char buffer[1024];
-    sprintf(buffer, "refreshUI()");
-    emscripten_run_script(buffer);
+    EM_ASM("refreshUI();");
 #endif
 
     return success;
