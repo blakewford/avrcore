@@ -616,6 +616,34 @@ int32_t fetch()
                 newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]) ? SET: CLR;
                 PC+=2;
                 break;
+            case 0x40:
+            case 0x41:
+            case 0x42:
+            case 0x43:
+            case 0x44:
+            case 0x45:
+            case 0x46:
+            case 0x47:
+            case 0x48:
+            case 0x49:
+            case 0x4A:
+            case 0x4B:
+            case 0x4C:
+            case 0x4D:
+            case 0x4E:
+            case 0x4F: //sbci
+                result = ((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF);
+                newStatus.H = generateHStatus(memory[16+((memory[PC+1] & 0xF0) >> 4)], result);
+                newStatus.V = generateVStatus(memory[16+((memory[PC+1] & 0xF0) >> 4)], result);
+                result += SREG.C;
+                newStatus.C = abs(result) > abs(memory[16+((memory[PC+1] & 0xF0) >> 4)]) ? SET: CLR;
+                memory[16+((memory[PC+1] & 0xF0) >> 4)] -= result;
+                result = memory[16+((memory[PC+1] & 0xF0) >> 4)];
+                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                newStatus.Z = result == 0x00 ? newStatus.Z: CLR;
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                PC+=2;
+                break;
             case 0x50:
             case 0x51:
             case 0x52:
