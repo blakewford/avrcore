@@ -935,7 +935,11 @@ int32_t fetch()
                     case 0xC:
                     case 0xD: //jmp
                         // No SREG Updates
-                        PC+=(memory[PC+2] << 8 | memory[PC+3])*2;
+                        result  = (memory[PC] & 0x1) << 21;
+                        result += (memory[PC+1] >> 4) << 17;
+                        result += (memory[PC+1] & 0x1) << 16;
+                        result += (memory[PC+2] << 8 | memory[PC+3]);
+                        PC = programStart + (result*2);
                         break;
                     case 0xE:
                     case 0xF: //call
