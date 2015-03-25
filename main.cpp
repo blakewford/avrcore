@@ -25,6 +25,8 @@ char* cachedArgv[64];
 #define ATMEGA32U4_PORTD_ADDRESS 0x2B
 #define ATMEGA32U4_PORTE_ADDRESS 0x2E
 #define ATMEGA32U4_PORTF_ADDRESS 0x31
+#define ATMEGA32U4_UCSR1A 0xC8
+#define UDRE1 1<<5
 #define DMA_START_ADDRESS 0x7FF6
 #define IO_REG_START 0x20
 #define SREG_ADDRESS 0x5F
@@ -82,6 +84,11 @@ int32_t fetch();
 uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
 void pushStatus(status& newStatus);
+void resetFetchState()
+{
+    memory[SPSR_ADDRESS] |= SPIF_BIT;
+    memory[ATMEGA32U4_UCSR1A] |= UDRE1;
+}
 
 void platformPrint(const char* message)
 {
@@ -239,7 +246,7 @@ void engineInit()
     int32_t SP = programStart - 1;
     memory[SPH_ADDRESS] = (SP & 0xFF00) >> 8;
     memory[SPL_ADDRESS] = (SP & 0xFF);
-    memory[SPSR_ADDRESS] = SPIF_BIT;
+    resetFetchState();
 }
 
 int32_t getValueFromHex(uint8_t* buffer, int32_t size)
@@ -1166,7 +1173,7 @@ int32_t fetch()
                 break;
         }
         pushStatus(newStatus);
-        memory[SPSR_ADDRESS] |= SPIF_BIT;
+        resetFetchState();
 #ifdef EMSCRIPTEN
         std::this_thread::yield();
 #else
