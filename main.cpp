@@ -1055,6 +1055,11 @@ int32_t fetch()
             case 0xCD:
             case 0xCE:
             case 0xCF: //rjmp
+                if((memory[PC] == 0xCF) && (memory[PC+1] == 0xFF))
+                {
+                    //Program Exit
+                    return false;
+                }
                 result = ((memory[PC] & 0xF) << 8) | memory[PC+1];
                 PC+=2;
                 PC = (0x800 == (result & 0x800)) ? PC - (0x1000 - (2*(result^0x800))) : PC + (2*result);
