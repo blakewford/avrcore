@@ -36,6 +36,8 @@ char* cachedArgv[64];
 #define SDR_ADDRESS 0x4E
 #define SPSR_ADDRESS 0x4D
 #define PLLCSR_ADDRESS 0x49
+#define PLLE 1<<1
+#define PLOCK 1<<0
 #define SPIF_BIT 1<<7
 
 //Globals
@@ -162,6 +164,7 @@ uint8_t readMemory(int32_t address)
 void writeMemory(int32_t address, int32_t value)
 {
     char buffer[256];
+    memory[address] = value;
     switch(address)
     {
         case ATMEGA32U4_PORTB_ADDRESS:
@@ -192,8 +195,11 @@ void writeMemory(int32_t address, int32_t value)
             platformPrint(buffer);
 #endif
             break;
+        case PLLCSR_ADDRESS:
+            memory[PLLCSR_ADDRESS] = value;
+            memory[PLLCSR_ADDRESS] = (value & PLLE) > 0 ? memory[PLLCSR_ADDRESS] | PLOCK : memory[PLLCSR_ADDRESS] & ~PLOCK;
+            break;
     }
-    memory[address] = value;
 }
 
 void pushStatus(status& newStatus)
