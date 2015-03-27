@@ -1061,6 +1061,18 @@ int32_t fetch()
                 }
                 PC+=2;
                 break;
+            case 0x9B: //sbis
+                result = memory[(memory[PC+1] >> 0x3) + IO_REG_START];
+                if((result & (1 << (memory[PC+1] & 0x7))) > 0)
+                {
+                    PC+=2;
+                    if(longOpcode(PC))
+                    {
+                        PC+=2;
+                    }
+                }
+                PC+=2;
+                break;
             case 0xB0:
             case 0xB1:
             case 0xB2:
