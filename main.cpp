@@ -35,6 +35,7 @@ char* cachedArgv[64];
 #define SPMCSR_ADDRESS 0x57
 #define SDR_ADDRESS 0x4E
 #define SPSR_ADDRESS 0x4D
+#define PLLCSR_ADDRESS 0x49
 #define SPIF_BIT 1<<7
 
 //Globals
@@ -449,6 +450,39 @@ int32_t fetchN(int32_t n)
 #endif
 
     return success;
+}
+
+bool longOpcode(uint16_t programCounter)
+{
+    uint16_t opcode0 = memory[programCounter];
+    uint16_t opcode1 = memory[programCounter+1];
+
+    switch(opcode0)
+    {
+        case 0x90:
+        case 0x91:
+            if((opcode1 & 0xF) == 0) //lds
+            {
+                return true;
+            }
+            break;
+        case 0x92:
+        case 0x93:
+            if((opcode1 & 0xF) == 0) //sts
+            {
+                return true;
+            }
+            break;
+        case 0x94:
+        case 0x95:
+            if((opcode1 & 0xF) > 0xB) //jmp / call
+            {
+                return true;
+            }
+            break;
+    }
+
+    return false;
 }
 
 void incrementStackPointer()
@@ -1177,6 +1211,23 @@ int32_t fetch()
                         PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
                     }
                     // No SREG Updates
+                    PC+=2;
+                    break;
+                }
+                assert(0);
+            case 0xFE:
+            case 0xFF: //sbrs
+                if((memory[PC+1] & 0xF) < 0x8)
+                {
+                    result = memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                    if((result & (1 << (memory[PC+1] & 0xF))) > 0)
+                    {
+                        PC+=2;
+                        if(longOpcode(PC))
+                        {
+                            PC+=2;
+                        }
+                    }
                     PC+=2;
                     break;
                 }
