@@ -905,6 +905,14 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
+                if((memory[PC+1] & 0xF) == 0xC) //ld x
+                {
+                    result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
+                    memory[result] = readMemory(2*(((memory[27] << 8) | memory[26]) >> 1) + programStart + ((((memory[27] << 8) | memory[26]) & 0x1) == 0 ? 1: 0));
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC+1] & 0xF) == 0xF) //pop
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
