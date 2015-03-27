@@ -1295,6 +1295,17 @@ int32_t fetch()
             case 0xF5:
             case 0xF6:
             case 0xF7:
+                if((((memory[PC] & 0x0C) >> 2) == 0x1) && ((memory[PC+1] & 0x7) == 0x0)) //brcc
+                {
+                    if(SREG.C == CLR)
+                    {
+                        result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
+                        PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
+                    }
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
                 if((((memory[PC] & 0x0C) >> 2) == 0x1) && ((memory[PC+1] & 0x7) == 0x1)) //brne
                 {
                     if(SREG.Z == CLR)
