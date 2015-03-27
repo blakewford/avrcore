@@ -841,6 +841,19 @@ int32_t fetch()
                     break;
                 }
                 assert(0);
+            case 0x8A:
+            case 0x8B:
+            case 0x8E:
+            case 0x8F:
+                if((memory[PC+1] & 0xF) < 0x8) //st (std) z
+                {
+                    result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                    writeMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)), result);
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
+                assert(0);
             case 0x90:
             case 0x91:
                 if((memory[PC+1] & 0xF) == 0x0) //lds
