@@ -817,6 +817,7 @@ int32_t fetch()
                 assert(0);
             case 0x84:
             case 0x85:
+            case 0x8D:
                 if((memory[PC+1] & 0xF) >= 0x8) //ld (ldd) y
                 {
                     result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
@@ -948,6 +949,14 @@ int32_t fetch()
                {
                    memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
                    decrementStackPointer();
+                   // No SREG Updates
+                   PC+=2;
+                   break;
+               }
+               if((memory[PC+1] & 0xF) == 0xC) //st x
+               {
+                   result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
+                   writeMemory((memory[27] << 8) | memory[26], result);
                    // No SREG Updates
                    PC+=2;
                    break;
@@ -1128,6 +1137,7 @@ int32_t fetch()
                 // No SREG Updates
                 PC+=2;
                 break;
+            case 0xA1:
             case 0xA5:
                 if((memory[PC+1] & 0xF) >= 0x8) //ld (ldd) y
                 {
@@ -1137,6 +1147,8 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
+            case 0xA3:
+            case 0xA7:
             case 0xAA:
                 if((memory[PC+1] & 0xF) >= 0x8) //st (std) y
                 {
