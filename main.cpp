@@ -1070,6 +1070,12 @@ int32_t fetch()
                 }
                 PC+=2;
                 break;
+            case 0x98: //cbi
+                result = (1 << (memory[PC+1] & 0x7));
+                memory[(memory[PC+1] >> 0x3) + IO_REG_START] &= ~result;
+                // No SREG Updates
+                PC+=2;
+                break;
             case 0x9A: //sbi
                 result = (1 << (memory[PC+1] & 0x7));
                 memory[(memory[PC+1] >> 0x3) + IO_REG_START] |= result;
