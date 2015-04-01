@@ -998,6 +998,12 @@ int32_t fetch()
                assert(0);
             case 0x94:
             case 0x95:
+                if((memory[PC] == 0x94) && (memory[PC+1] == 0x08)) //sec
+                {
+                    newStatus.C = SET;
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC] == 0x94) && (memory[PC+1] == 0x78)) //sei
                 {
                     newStatus.I = SET;
