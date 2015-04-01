@@ -926,6 +926,23 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
+                if((memory[PC+1] & 0xF) == 0xD) //ld x+
+                {
+                    result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
+                    memory[result] = readMemory(2*(((memory[27] << 8) | memory[26]) >> 1) + programStart + ((((memory[27] << 8) | memory[26]) & 0x1) == 0 ? 1: 0));
+                    // No SREG Updates
+                    if(memory[26] < 0xFF)
+                    {
+                        memory[26] = memory[26]+1;
+                    }
+                    else
+                    {
+                        memory[27] = memory[27]+1;
+                        memory[26] = 0x00;
+                    }
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC+1] & 0xF) == 0xF) //pop
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
@@ -1024,6 +1041,17 @@ int32_t fetch()
                         result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
                         newStatus.C = (result & 0x1) > 0 ? SET: CLR;
                         result = ((result >> 1) | (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] & 0x80));
+                        newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                        newStatus.V = ((newStatus.N ^ newStatus.C) > 0) ? SET: CLR;
+                        newStatus.Z = result == 0x00 ? SET: CLR;
+                        newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                        memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result;
+                        PC+=2;
+                        break;
+                    case 0x7: //ror
+                        result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
+                        newStatus.C = (result & 0x1) > 0 ? SET: CLR;
+                        result = ((result >> 1) | (newStatus.C << 7));
                         newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
                         newStatus.V = ((newStatus.N ^ newStatus.C) > 0) ? SET: CLR;
                         newStatus.Z = result == 0x00 ? SET: CLR;
