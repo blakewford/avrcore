@@ -854,10 +854,29 @@ int32_t fetch()
                     break;
                 }
                 assert(0);
+            case 0x88:
+            case 0x89:
+                if((memory[PC+1] & 0xF) < 0x8) //ld (ldd) z
+                {
+                    result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
+                    memory[result] = readMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)));
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
+                break;
             case 0x8A:
             case 0x8B:
             case 0x8E:
             case 0x8F:
+                if((memory[PC+1] & 0xF) >= 0x8) //st (std) y
+                {
+                    result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                    writeMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)), result);
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC+1] & 0xF) < 0x8) //st (std) z
                 {
                     result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
