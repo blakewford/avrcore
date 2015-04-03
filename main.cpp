@@ -1074,6 +1074,12 @@ int32_t fetch()
                         newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                         PC+=2;
                         break;
+                    case 0x2: //swap
+                        result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] << 4;
+                        result |= (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] >> 4);
+                        memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result;
+                        PC+=2;
+                        break;
                     case 0x5: //asr
                         result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
                         newStatus.C = (result & 0x1) > 0 ? SET: CLR;
