@@ -1050,6 +1050,18 @@ int32_t fetch()
                     PC = ((memory[result] << 8) | (memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]]));
                     break;
                 }
+                if((memory[PC] == 0x95) && (memory[PC+1] == 0x9)) //icall
+                {
+                    result = ((memory[31] << 8) | memory[30]);
+                    PC += 2;
+                    memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF);
+                    decrementStackPointer();
+                    memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF00) >> 8;
+                    decrementStackPointer();
+                    // No SREG Updates
+                    PC = result;
+                    break;
+                }
                 switch(memory[PC+1] & 0x0F)
                 {
                     case 0x0: //com
