@@ -1422,6 +1422,23 @@ int32_t fetch()
                     break;
                 }
                 assert(0);
+            case 0xFC:
+            case 0xFD: //sbrc
+                if((memory[PC+1] & 0xF) < 0x8)
+                {
+                    result = memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                    if((result & (1 << (memory[PC+1] & 0xF))) == 0)
+                    {
+                        PC+=2;
+                        if(longOpcode(PC))
+                        {
+                            PC+=2;
+                        }
+                    }
+                    PC+=2;
+                    break;
+                }
+                assert(0);
             case 0xFE:
             case 0xFF: //sbrs
                 if((memory[PC+1] & 0xF) < 0x8)
