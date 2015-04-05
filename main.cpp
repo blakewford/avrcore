@@ -26,6 +26,9 @@ char* cachedArgv[64];
 #define ATMEGA32U4_PORTE_ADDRESS 0x2E
 #define ATMEGA32U4_PORTF_ADDRESS 0x31
 #define ATMEGA32U4_UCSR1A 0xC8
+#define ATMEGA32U4_ADCSRA 0x7A
+#define ATMEGA32U4_ADCH 0x79
+#define ATMEGA32U4_ADCL 0x78
 #define UDRE1 1<<5
 #define DMA_START_ADDRESS 0x7FF6
 #define IO_REG_START 0x20
@@ -39,6 +42,7 @@ char* cachedArgv[64];
 #define PLLE 1<<1
 #define PLOCK 1<<0
 #define SPIF_BIT 1<<7
+#define ADSC_BIT 1<<6
 
 //Globals
 #define MANUFACTURER_ID 0xBF
@@ -89,6 +93,7 @@ void writeMemory(int32_t address, int32_t value);
 void pushStatus(status& newStatus);
 void resetFetchState()
 {
+    memory[ATMEGA32U4_ADCSRA] &= ~ADSC_BIT;
     memory[SPSR_ADDRESS] |= SPIF_BIT;
     memory[ATMEGA32U4_UCSR1A] |= UDRE1;
 }
@@ -158,6 +163,14 @@ int32_t main(int32_t argc, char** argv)
 
 uint8_t readMemory(int32_t address)
 {
+    if(address == ATMEGA32U4_ADCH)
+    {
+        return 0;
+    }
+    if(address == ATMEGA32U4_ADCL)
+    {
+        return 9;
+    }
     return memory[address];
 }
 
