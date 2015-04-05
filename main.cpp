@@ -877,7 +877,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                break;
+                assert(0);
             case 0x8A:
             case 0x8B:
             case 0x8E:
