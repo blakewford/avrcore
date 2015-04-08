@@ -869,6 +869,14 @@ int32_t fetch()
                 assert(0);
             case 0x88:
             case 0x89:
+                if((memory[PC+1] & 0xF) >= 0x8) //ld (ldd) y
+                {
+                    result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
+                    memory[result] = readMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)));
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC+1] & 0xF) < 0x8) //ld (ldd) z
                 {
                     result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
