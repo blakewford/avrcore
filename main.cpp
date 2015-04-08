@@ -1266,6 +1266,17 @@ int32_t fetch()
                 // No SREG Updates
                 PC+=2;
                 break;
+            case 0x9C:
+            case 0x9D:
+            case 0x9E:
+            case 0x9F: //mul
+               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] * memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               newStatus.Z = result == 0x0000 ? SET: CLR;
+               newStatus.C = ((result & 0x8000) > 0) ? SET: CLR;
+               memory[1] = result >> 8;
+               memory[0] = result & 0xFF;
+               PC+=2;
+               break;
             case 0xA1:
             case 0xA5:
                 if((memory[PC+1] & 0xF) >= 0x8) //ld (ldd) y
