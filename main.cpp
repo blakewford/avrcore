@@ -1110,6 +1110,20 @@ int32_t fetch()
                         newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                         PC+=2;
                         break;
+                    case 0x1: //neg
+                        if(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] != 0x80)
+                        {
+                            result = (~memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] + 1) & 0xFF;
+                            memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result;
+                        }
+                        newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], result);
+                        newStatus.V = result == 0x80 ? SET: CLR;
+                        newStatus.C = result == 0x00 ? CLR: SET;
+                        newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                        newStatus.Z = result == 0x00 ? SET: CLR;
+                        newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                        PC+=2;
+                        break;
                     case 0x2: //swap
                         result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] << 4;
                         result |= (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] >> 4);
@@ -1469,6 +1483,12 @@ int32_t fetch()
                     break;
                 }
                 assert(0);
+            case 0xFA:
+            case 0xFB: //bst
+                result = memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                newStatus.T = (result & (1 << (memory[PC+1] & 0x7))) > 0 ? SET: CLR;
+                PC+=2;
+                break;
             case 0xFC:
             case 0xFD: //sbrc
                 if((memory[PC+1] & 0xF) < 0x8)
