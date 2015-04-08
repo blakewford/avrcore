@@ -1385,7 +1385,14 @@ int32_t fetch()
                 memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF00) >> 8;
                 decrementStackPointer();
                 // No SREG Updates
-                PC+=result;
+                if(0x800 == (result & 0x800))
+                {
+                    PC -= (0x1000 - 2*(result^0x800));
+                }
+                else
+                {
+                    PC += (2*result);
+                }
                 break;
             case 0xE0:
             case 0xE1:
