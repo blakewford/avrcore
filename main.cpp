@@ -25,6 +25,7 @@ char* cachedArgv[64];
 #define ATMEGA32U4_PORTD_ADDRESS 0x2B
 #define ATMEGA32U4_PORTE_ADDRESS 0x2E
 #define ATMEGA32U4_PORTF_ADDRESS 0x31
+#define ATMEGA32U4_TIMER_INTERRUPT_ADDRESS 0x5C
 #define ATMEGA32U4_UCSR1A 0xC8
 #define ATMEGA32U4_ADCSRA 0x7A
 #define ATMEGA32U4_ADCH 0x79
@@ -39,6 +40,9 @@ char* cachedArgv[64];
 #define SDR_ADDRESS 0x4E
 #define SPSR_ADDRESS 0x4D
 #define PLLCSR_ADDRESS 0x49
+#define TCNT0_ADDRESS 0x46
+#define TIFR0_ADDRESS 0x35
+#define TOV0 1<<0
 #define PLLE 1<<1
 #define PLOCK 1<<0
 #define SPIF_BIT 1<<7
@@ -91,6 +95,7 @@ int32_t fetch();
 uint8_t readMemory(int32_t address);
 void writeMemory(int32_t address, int32_t value);
 void pushStatus(status& newStatus);
+void decrementStackPointer();
 void resetFetchState()
 {
     memory[ATMEGA32U4_ADCSRA] &= ~ADSC_BIT;
@@ -170,6 +175,10 @@ uint8_t readMemory(int32_t address)
     if(address == ATMEGA32U4_ADCL)
     {
         return 9;
+    }
+    if(address == TIFR0_ADDRESS)
+    {
+        return TOV0;
     }
     return memory[address];
 }
@@ -452,13 +461,38 @@ int8_t generateHStatus(uint8_t firstOp, uint8_t secondOp)
 
 void execProgram()
 {
-    while(fetch())
+    while(fetchN(1))
         ;
 }
 
+void callTOV0Interrupt()
+{
+  writeMemory((memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS], PC >> 8);
+  decrementStackPointer();
+  writeMemory((memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS], PC & 255);
+  decrementStackPointer();
+  PC = ATMEGA32U4_TIMER_INTERRUPT_ADDRESS + programStart;
+}
+
+int32_t trackedFetches = 0;
 int32_t fetchN(int32_t n)
 {
     bool success = true;
+    bool timed = false;
+    for(int i = 0; i < n/256; i++)
+    {
+        timed = true;
+        callTOV0Interrupt();
+    }
+    if(!timed)
+    {
+        trackedFetches += n;
+    }
+    if(trackedFetches/256)
+    {
+        trackedFetches = 0;
+        callTOV0Interrupt();
+    }
     while(success && n)
     {
         success = fetch();
@@ -1103,6 +1137,15 @@ int32_t fetch()
                     decrementStackPointer();
                     // No SREG Updates
                     PC = result;
+                    break;
+                }
+                if((memory[PC] == 0x95) && (memory[PC+1] == 0x18)) //reti
+                {
+                    incrementStackPointer();
+                    result = (memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS];
+                    incrementStackPointer();
+                    newStatus.I = SET;
+                    PC = (memory[result] | ((memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]]) << 8));
                     break;
                 }
                 switch(memory[PC+1] & 0x0F)
