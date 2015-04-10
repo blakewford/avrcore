@@ -1308,6 +1308,15 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
+            case 0xA6:
+                if((memory[PC+1] & 0xF) < 0x8) //st (std) z
+                {
+                    result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                    writeMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | ((memory[PC] >> 1) & 0x10)), result);
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
             case 0xA3:
             case 0xA7:
             case 0xAA:
