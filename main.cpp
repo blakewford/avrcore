@@ -559,7 +559,7 @@ int32_t fetch()
                newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
-               newStatus.Z = result == 0x00 ? SET: CLR;
+               newStatus.Z = result == 0x00 ? newStatus.Z: CLR;
                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
                PC+=2;
@@ -1057,6 +1057,13 @@ int32_t fetch()
                 {
                     newStatus.C = SET;
                     PC+=2;
+                    break;
+                }
+                if((memory[PC] == 0x94) && (memory[PC+1] == 0x09)) //ijmp
+                {
+                    result = (2*((memory[31] << 8) | memory[30])) + programStart;
+                    // No SREG Updates
+                    PC = result;
                     break;
                 }
                 if((memory[PC] == 0x94) && (memory[PC+1] == 0x78)) //sei
