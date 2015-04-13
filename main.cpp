@@ -784,6 +784,7 @@ int32_t fetch()
                 result = ((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF);
                 newStatus.H = generateHStatus(memory[16+((memory[PC+1] & 0xF0) >> 4)], result);
                 newStatus.V = generateVStatus(memory[16+((memory[PC+1] & 0xF0) >> 4)], result);
+                newStatus.C = abs(result) > abs(memory[16+((memory[PC+1] & 0xF0) >> 4)]) ? SET: CLR;
                 memory[16+((memory[PC+1] & 0xF0) >> 4)] -= result;
                 result = memory[16+((memory[PC+1] & 0xF0) >> 4)];
                 newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
