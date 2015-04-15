@@ -49,6 +49,7 @@ char* cachedArgv[64];
 #define ADSC_BIT 1<<6
 
 //Globals
+#define INSTRUCTION_LIMIT 1024
 #define MANUFACTURER_ID 0xBF
 #define SIGRD 1<<5
 #define SPMEN 1<<0
@@ -479,7 +480,7 @@ int32_t fetchN(int32_t n)
 {
     bool success = true;
     bool timed = false;
-    for(int i = 0; i < n/256; i++)
+    for(int i = 0; i < n/INSTRUCTION_LIMIT; i++)
     {
         timed = true;
         callTOV0Interrupt();
@@ -488,7 +489,7 @@ int32_t fetchN(int32_t n)
     {
         trackedFetches += n;
     }
-    if(trackedFetches/256)
+    if(trackedFetches/INSTRUCTION_LIMIT)
     {
         trackedFetches = 0;
         callTOV0Interrupt();
@@ -1011,7 +1012,7 @@ int32_t fetch()
                 if((memory[PC+1] & 0xF) == 0xC) //ld x
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
-                    memory[result] = readMemory(2*(((memory[27] << 8) | memory[26]) >> 1));
+                    memory[result] = readMemory((memory[27] << 8) | memory[26]);
                     // No SREG Updates
                     PC+=2;
                     break;
@@ -1019,7 +1020,7 @@ int32_t fetch()
                 if((memory[PC+1] & 0xF) == 0xD) //ld x+
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
-                    memory[result] = readMemory(2*(((memory[27] << 8) | memory[26]) >> 1) + programStart + ((((memory[27] << 8) | memory[26]) & 0x1) == 0 ? 1: 0));
+                    memory[result] = readMemory((memory[27] << 8) | memory[26]);
                     // No SREG Updates
                     if(memory[26] < 0xFF)
                     {
