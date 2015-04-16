@@ -1131,7 +1131,7 @@ int32_t fetch()
                 }
                 if((memory[PC] == 0x95) && (memory[PC+1] == 0x9)) //icall
                 {
-                    result = ((memory[31] << 8) | memory[30]);
+                    result = (((memory[31] << 8) | memory[30])*2)+programStart;
                     PC += 2;
                     memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF);
                     decrementStackPointer();
