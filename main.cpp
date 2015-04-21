@@ -18,41 +18,53 @@ char argvStorage[1024];
 char* cachedArgv[64];
 
 //Platform Defines
+#ifdef ATMEGA32U4
 #define ATMEGA32U4_FLASH_SIZE 32*1024
 #define ATMEGA32U4_ENTRY 0xB00
-#define ATMEGA32U4_PORTB_ADDRESS 0x25
-#define ATMEGA32U4_PORTC_ADDRESS 0x28
-#define ATMEGA32U4_PORTD_ADDRESS 0x2B
 #define ATMEGA32U4_PORTE_ADDRESS 0x2E
 #define ATMEGA32U4_PORTF_ADDRESS 0x31
 #define ATMEGA32U4_TIMER_INTERRUPT_ADDRESS 0x5C
 #define ATMEGA32U4_UCSR1A 0xC8
-#define ATMEGA32U4_ADCSRA 0x7A
-#define ATMEGA32U4_ADCH 0x79
-#define ATMEGA32U4_ADCL 0x78
-#define UDRE1 1<<5
-#define DMA_START_ADDRESS 0x7FF6
-#define IO_REG_START 0x20
+#define ATMEGA32U4_PLLCSR_ADDRESS 0x49
+#define DMA_START_ADDRESS ATMEGA32U4_FLASH_SIZE-0xA
+#elif defined(ATMEGA328)
+#define DMA_START_ADDRESS ATMEGA328_FLASH_SIZE-0xA
+#else
+#error "Unknown target platform"
+#endif
+
+//Common Registers
+#define ADCSRA_ADDRESS 0x7A
+#define ADCH_ADDRESS 0x79
+#define ADCL_ADDRESS 0x78
 #define SREG_ADDRESS 0x5F
 #define SPH_ADDRESS  0x5E
 #define SPL_ADDRESS  0x5D
 #define SPMCSR_ADDRESS 0x57
 #define SDR_ADDRESS 0x4E
 #define SPSR_ADDRESS 0x4D
-#define PLLCSR_ADDRESS 0x49
 #define TCNT0_ADDRESS 0x46
 #define TIFR0_ADDRESS 0x35
-#define TOV0 1<<0
-#define PLLE 1<<1
-#define PLOCK 1<<0
+#define PORTB_ADDRESS 0x25
+#define PORTC_ADDRESS 0x28
+#define PORTD_ADDRESS 0x2B
+#define IO_REG_START 0x20
+
+//Status Bits
+#define UDRE_BIT 1<<5
+#define TOV0_BIT 1<<0
+#define SIGRD_BIT 1<<5
+#define SPMEN_BIT 1<<0
 #define SPIF_BIT 1<<7
 #define ADSC_BIT 1<<6
+
+//Platform Specific Status Bits
+#define ATMEGA32U4_PLLE_BIT 1<<1
+#define ATMEGA32U4_PLOCK_BIT 1<<0
 
 //Globals
 #define INSTRUCTION_LIMIT 1024
 #define MANUFACTURER_ID 0xBF
-#define SIGRD 1<<5
-#define SPMEN 1<<0
 #define CLR 0
 #define SET 1
 #define IGNORE 2
@@ -99,9 +111,9 @@ void pushStatus(status& newStatus);
 void decrementStackPointer();
 void resetFetchState()
 {
-    memory[ATMEGA32U4_ADCSRA] &= ~ADSC_BIT;
+    memory[ADCSRA_ADDRESS] &= ~ADSC_BIT;
     memory[SPSR_ADDRESS] |= SPIF_BIT;
-    memory[ATMEGA32U4_UCSR1A] |= UDRE1;
+    memory[ATMEGA32U4_UCSR1A] |= UDRE_BIT;
 }
 
 void platformPrint(const char* message)
@@ -169,17 +181,17 @@ int32_t main(int32_t argc, char** argv)
 
 uint8_t readMemory(int32_t address)
 {
-    if(address == ATMEGA32U4_ADCH)
+    if(address == ADCH_ADDRESS)
     {
         return 0;
     }
-    if(address == ATMEGA32U4_ADCL)
+    if(address == ADCL_ADDRESS)
     {
         return 9;
     }
     if(address == TIFR0_ADDRESS)
     {
-        return TOV0;
+        return TOV0_BIT;
     }
     return memory[address];
 }
@@ -190,21 +202,21 @@ void writeMemory(int32_t address, int32_t value)
     memory[address] = value;
     switch(address)
     {
-        case ATMEGA32U4_PORTB_ADDRESS:
-        case ATMEGA32U4_PORTC_ADDRESS:
-        case ATMEGA32U4_PORTD_ADDRESS:
+        case PORTB_ADDRESS:
+        case PORTC_ADDRESS:
+        case PORTD_ADDRESS:
         case ATMEGA32U4_PORTE_ADDRESS:
         case ATMEGA32U4_PORTF_ADDRESS:
 #ifdef LIBRARY
-            sprintf(buffer, "writePort(%i, %i)", (address-ATMEGA32U4_PORTB_ADDRESS)/3, value);
+            sprintf(buffer, "writePort(%i, %i)", (address-PORTB_ADDRESS)/3, value);
             emscripten_run_script(buffer);
 #else
-            sprintf(buffer, "Port %i 0x%X", (address-ATMEGA32U4_PORTB_ADDRESS)/3, value);
+            sprintf(buffer, "Port %i 0x%X", (address-PORTB_ADDRESS)/3, value);
             platformPrint(buffer);
 #endif
             break;
         case SPMCSR_ADDRESS:
-            if(value == (SIGRD|SPMEN))
+            if(value == (SIGRD_BIT|SPMEN_BIT))
             {
                  memory[((memory[31] << 8) | memory[30]) + programStart + 1] = MANUFACTURER_ID;
             }
@@ -218,9 +230,9 @@ void writeMemory(int32_t address, int32_t value)
             platformPrint(buffer);
 #endif
             break;
-        case PLLCSR_ADDRESS:
-            memory[PLLCSR_ADDRESS] = value;
-            memory[PLLCSR_ADDRESS] = (value & PLLE) > 0 ? memory[PLLCSR_ADDRESS] | PLOCK : memory[PLLCSR_ADDRESS] & ~PLOCK;
+        case ATMEGA32U4_PLLCSR_ADDRESS:
+            memory[ATMEGA32U4_PLLCSR_ADDRESS] = value;
+            memory[ATMEGA32U4_PLLCSR_ADDRESS] = (value & ATMEGA32U4_PLLE_BIT) > 0 ? memory[ATMEGA32U4_PLLCSR_ADDRESS] | ATMEGA32U4_PLOCK_BIT : memory[ATMEGA32U4_PLLCSR_ADDRESS] & ~ATMEGA32U4_PLOCK_BIT;
             break;
     }
 }
