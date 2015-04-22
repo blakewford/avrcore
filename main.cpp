@@ -17,18 +17,27 @@ int32_t cachedArgc = 0;
 char argvStorage[1024];
 char* cachedArgv[64];
 
+#define FLASH_SIZE 32*1024
+#define DMA_START_ADDRESS FLASH_SIZE-0xA
+
 //Platform Defines
 #ifdef ATMEGA32U4
-#define ATMEGA32U4_FLASH_SIZE 32*1024
 #define ATMEGA32U4_ENTRY 0xB00
-#define ATMEGA32U4_PORTE_ADDRESS 0x2E
-#define ATMEGA32U4_PORTF_ADDRESS 0x31
 #define ATMEGA32U4_TIMER_INTERRUPT_ADDRESS 0x5C
 #define ATMEGA32U4_UCSR1A 0xC8
+#define ATMEGA32U4_PORTE_ADDRESS 0x2E
+#define ATMEGA32U4_PORTF_ADDRESS 0x31
 #define ATMEGA32U4_PLLCSR_ADDRESS 0x49
-#define DMA_START_ADDRESS ATMEGA32U4_FLASH_SIZE-0xA
+#define ENTRY_ADDRESS ATMEGA32U4_ENTRY
+#define TIMER_INTERRUPT_ADDRESS ATMEGA32U4_TIMER_INTERRUPT_ADDRESS
+#define UCSRA_ADDRESS ATMEGA32U4_UCSR1A
 #elif defined(ATMEGA328)
-#define DMA_START_ADDRESS ATMEGA328_FLASH_SIZE-0xA
+#define ATMEGA328_ENTRY 0x900
+#define ATMEGA328_TIMER_INTERRUPT_ADDRESS 0x40
+#define ATMEGA328_UCSR0A 0xC0
+#define ENTRY_ADDRESS ATMEGA328_ENTRY
+#define TIMER_INTERRUPT_ADDRESS ATMEGA328_TIMER_INTERRUPT_ADDRESS
+#define UCSRA_ADDRESS ATMEGA328_UCSR0A
 #else
 #error "Unknown target platform"
 #endif
@@ -90,8 +99,8 @@ struct status
     int8_t T:3;
     int8_t I:3;
 };
-uint8_t memory[ATMEGA32U4_FLASH_SIZE];
-int32_t programStart = ATMEGA32U4_ENTRY;
+uint8_t memory[FLASH_SIZE];
+int32_t programStart = ENTRY_ADDRESS;
 uint16_t PC;
 status SREG;
 
@@ -113,7 +122,7 @@ void resetFetchState()
 {
     memory[ADCSRA_ADDRESS] &= ~ADSC_BIT;
     memory[SPSR_ADDRESS] |= SPIF_BIT;
-    memory[ATMEGA32U4_UCSR1A] |= UDRE_BIT;
+    memory[UCSRA_ADDRESS] |= UDRE_BIT;
 }
 
 void platformPrint(const char* message)
@@ -205,8 +214,10 @@ void writeMemory(int32_t address, int32_t value)
         case PORTB_ADDRESS:
         case PORTC_ADDRESS:
         case PORTD_ADDRESS:
+#ifdef ATMEGA32U4
         case ATMEGA32U4_PORTE_ADDRESS:
         case ATMEGA32U4_PORTF_ADDRESS:
+#endif
 #ifdef LIBRARY
             sprintf(buffer, "writePort(%i, %i)", (address-PORTB_ADDRESS)/3, value);
             emscripten_run_script(buffer);
@@ -230,10 +241,12 @@ void writeMemory(int32_t address, int32_t value)
             platformPrint(buffer);
 #endif
             break;
+#ifdef ATMEGA32U4
         case ATMEGA32U4_PLLCSR_ADDRESS:
             memory[ATMEGA32U4_PLLCSR_ADDRESS] = value;
             memory[ATMEGA32U4_PLLCSR_ADDRESS] = (value & ATMEGA32U4_PLLE_BIT) > 0 ? memory[ATMEGA32U4_PLLCSR_ADDRESS] | ATMEGA32U4_PLOCK_BIT : memory[ATMEGA32U4_PLLCSR_ADDRESS] & ~ATMEGA32U4_PLOCK_BIT;
             break;
+#endif
     }
 }
 
@@ -389,7 +402,7 @@ void loadDefaultProgram()
         memory[0xBE1] = 0x98;
 }
 
-int32_t currentAddressCursor = ATMEGA32U4_ENTRY;
+int32_t currentAddressCursor = ENTRY_ADDRESS;
 void loadPartialProgram(uint8_t* binary)
 {
     int32_t lineCursor = 0;
@@ -420,7 +433,7 @@ void loadPartialProgram(uint8_t* binary)
 void loadProgram(uint8_t* binary)
 {
     int32_t fileCursor = 0;
-    int32_t addressCursor = ATMEGA32U4_ENTRY;
+    int32_t addressCursor = ENTRY_ADDRESS;
     while(true)
     {
         assert(binary[fileCursor++] == ':');
@@ -484,7 +497,7 @@ void callTOV0Interrupt()
   decrementStackPointer();
   writeMemory((memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS], PC & 255);
   decrementStackPointer();
-  PC = ATMEGA32U4_TIMER_INTERRUPT_ADDRESS + programStart;
+  PC = TIMER_INTERRUPT_ADDRESS + programStart;
 }
 
 int32_t trackedFetches = 0;
@@ -569,7 +582,7 @@ void decrementStackPointer()
 
 int32_t fetch()
 {
-        if((PC >= ATMEGA32U4_FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
+        if((PC >= FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
             return false;
 
         uint16_t result;
