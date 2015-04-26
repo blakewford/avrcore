@@ -1079,6 +1079,23 @@ int32_t fetch()
                   PC+=4;
                   break;
                }
+               if((memory[PC+1] & 0xF) < 0x8) //st (std) -z
+               {
+                   result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                   if(memory[30] == 0x00)
+                   {
+                       memory[30] = 0xFF;
+                       memory[31] = memory[31]-1;
+                   }
+                   else
+                   {
+                       memory[30] = memory[30]-1;
+                   }
+                   writeMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)), result);
+                   // No SREG Updates
+                   PC+=2;
+                   break;
+               }
                if((memory[PC+1] & 0xF) == 0xF) //push
                {
                    memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
@@ -1109,6 +1126,23 @@ int32_t fetch()
                        memory[27] = memory[27]+1;
                        memory[26] = 0x00;
                    }
+                   PC+=2;
+                   break;
+               }
+               if((memory[PC+1] & 0xF) == 0xE) //st -x
+               {
+                   result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
+                   if(memory[26] == 0x00)
+                   {
+                       memory[26] = 0xFF;
+                       memory[27] = memory[27]-1;
+                   }
+                   else
+                   {
+                       memory[26] = memory[26]-1;
+                   }
+                   writeMemory((memory[27] << 8) | memory[26], result);
+                   // No SREG Updates
                    PC+=2;
                    break;
                }
