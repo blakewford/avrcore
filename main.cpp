@@ -605,61 +605,76 @@ int32_t fetch()
                 }
                 assert(0);
             case 0x1: //movw
-               memory[((memory[PC+1] & 0xF0) >> 4)*2] = memory[(memory[PC+1] & 0xF)*2];
-               memory[(((memory[PC+1] & 0xF0) >> 4)*2)+1] = memory[((memory[PC+1] & 0xF)*2)+1];
-               // No SREG Updates
-               PC+=2;
-               break;
+                memory[((memory[PC+1] & 0xF0) >> 4)*2] = memory[(memory[PC+1] & 0xF)*2];
+                memory[(((memory[PC+1] & 0xF0) >> 4)*2)+1] = memory[((memory[PC+1] & 0xF)*2)+1];
+                // No SREG Updates
+                PC+=2;
+                break;
             case 0x2: //muls
-               result = (int)memory[((memory[PC+1] & 0xF0) >> 4)*2]*(int)memory[(memory[PC+1] & 0xF)*2];
-               memory[0] = result & 0xFF;
-               memory[1] = result >> 8;
-               // No SREG Updates
-               PC+=2;
-               break;
+                result = (int)memory[((memory[PC+1] & 0xF0) >> 4)*2]*(int)memory[(memory[PC+1] & 0xF)*2];
+                memory[0] = result & 0xFF;
+                memory[1] = result >> 8;
+                // No SREG Updates
+                PC+=2;
+                break;
             case 0x4:
             case 0x5:
             case 0x6:
             case 0x7: //cpc
-               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               result -= SREG.C == SET ? 1: 0;
-               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
-               newStatus.Z = result == 0x00 ? newStatus.Z: CLR;
-               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
-               newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
-               PC+=2;
-               break;
+                result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                result -= SREG.C == SET ? 1: 0;
+                newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                newStatus.Z = result == 0x00 ? newStatus.Z: CLR;
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+                PC+=2;
+                break;
             case 0x8:
             case 0x9:
             case 0xA:
             case 0xB: //sbc
-               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               result -= SREG.C == SET ? 1: 0;
-               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
-               newStatus.Z = result == 0x00 ? newStatus.Z: CLR;
-               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
-               newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
-               memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
-               PC+=2;
-               break;
+                result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                result -= SREG.C == SET ? 1: 0;
+                newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                newStatus.Z = result == 0x00 ? newStatus.Z: CLR;
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+                memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
+                PC+=2;
+                break;
             case 0xC:
             case 0xD:
             case 0xE:
             case 0xF: //add
-               result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] + memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-               newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
-               newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
-               newStatus.Z = result == 0x00 ? SET: CLR;
-               newStatus.C = result > 0xFF ? SET: CLR;
-               memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
-               PC+=2;
-               break;
+                result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] + memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                newStatus.H = generateHStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                newStatus.V = generateVStatus(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)], memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
+                newStatus.Z = result == 0x00 ? SET: CLR;
+                newStatus.C = result > 0xFF ? SET: CLR;
+                memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
+                PC+=2;
+                break;
+            case 0x10:
+            case 0x11:
+            case 0x12:
+            case 0x13: //cpse
+                if(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] == memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)])
+                {
+                    PC+=2;
+                    if(longOpcode(PC))
+                    {
+                        PC+=2;
+                    }
+                }
+                // No SREG Updates
+                PC+=2;
+                break;
             case 0x14:
             case 0x15:
             case 0x16:
