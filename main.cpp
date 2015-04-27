@@ -610,6 +610,13 @@ int32_t fetch()
                // No SREG Updates
                PC+=2;
                break;
+            case 0x2: //muls
+               result = (int)memory[((memory[PC+1] & 0xF0) >> 4)*2]*(int)memory[(memory[PC+1] & 0xF)*2];
+               memory[0] = result & 0xFF;
+               memory[1] = result >> 8;
+               // No SREG Updates
+               PC+=2;
+               break;
             case 0x4:
             case 0x5:
             case 0x6:
@@ -1079,7 +1086,7 @@ int32_t fetch()
                   PC+=4;
                   break;
                }
-               if((memory[PC+1] & 0xF) < 0x8) //st (std) -z
+               if((memory[PC+1] & 0xF) == 0x2) //st (std) -z
                {
                    result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
                    if(memory[30] == 0x00)
@@ -1092,6 +1099,40 @@ int32_t fetch()
                        memory[30] = memory[30]-1;
                    }
                    writeMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)), result);
+                   // No SREG Updates
+                   PC+=2;
+                   break;
+               }
+               if((memory[PC+1] & 0xF) == 0x9) //st (std) y+
+               {
+                   result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                   writeMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)), result);
+                   // No SREG Updates
+                   if(memory[28] < 0xFF)
+                   {
+                       memory[28] = memory[28]+1;
+                   }
+                   else
+                   {
+                       memory[29] = memory[29]+1;
+                       memory[28] = 0x00;
+                   }
+                   PC+=2;
+                   break;
+               }
+               if((memory[PC+1] & 0xF) == 0xA) //st (std) y-
+               {
+                   if(memory[28] == 0x00)
+                   {
+                       memory[29] = memory[29]-1;
+                       memory[28] = 0xFF;
+                   }
+                   else
+                   {
+                       memory[28] = memory[28]-1;
+                   }
+                   result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
+                   writeMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)), result);
                    // No SREG Updates
                    PC+=2;
                    break;
