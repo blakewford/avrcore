@@ -1101,6 +1101,23 @@ int32_t fetch()
                   PC+=4;
                   break;
                }
+               if((memory[PC+1] & 0xF) == 0x1) //st (std) z+
+               {
+                   result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
+                   writeMemory((memory[31] << 8) | memory[30], result);
+                   // No SREG Updates
+                   if(memory[30] < 0xFF)
+                   {
+                       memory[30] = memory[30]+1;
+                   }
+                   else
+                   {
+                       memory[31] = memory[31]+1;
+                       memory[30] = 0x00;
+                   }
+                   PC+=2;
+                   break;
+               }
                if((memory[PC+1] & 0xF) == 0x2) //st (std) -z
                {
                    result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
