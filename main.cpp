@@ -150,7 +150,13 @@ int32_t main(int32_t argc, char** argv)
         storagePointer+=(length+1);
     }
     FILE* executable = NULL;
+#ifdef EMSCRIPTEN
+    EM_ASM(var fs = require('fs'); fs.readFile(process.argv[process.argv.length-1], 'utf8', function(error, hex){fs.writeFileSync('scratch', hex)}););
+    EM_ASM(FS.mkdir('/working'); FS.mount(NODEFS, { root: '.' }, '/working'););
+    executable = fopen("/working/scratch","rb");
+#else
     if(cachedArgc > 1) executable = fopen(cachedArgv[1],"rb");
+#endif
     if(executable)
     {
         fseek(executable, 0, SEEK_END);
@@ -160,6 +166,9 @@ int32_t main(int32_t argc, char** argv)
         fread(binary, 1, size, executable);
         fclose(executable);
         loadProgram(binary);
+#ifdef EMSCRIPTEN
+        EM_ASM(FS.unlink('/working/scratch'););
+#endif
     }
     else
     {
