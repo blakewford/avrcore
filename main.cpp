@@ -589,6 +589,15 @@ void decrementStackPointer()
     memory[SPL_ADDRESS] = (SP & 0xFF);
 }
 
+void handleUnimplemented()
+{
+    char buffer[1024];
+    sprintf(buffer, "Instruction not implemented at address 0x%X", PC);
+    platformPrint(buffer);
+    assert(0);
+}
+
+char buffer[1024];
 int32_t fetch()
 {
         if((PC >= FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
@@ -596,7 +605,6 @@ int32_t fetch()
 
         uint16_t result;
         status newStatus;
-        char buffer[1024];
         //sprintf(buffer, "0x%X Instruction 0x%X 0x%X", PC, memory[PC], memory[PC+1]);
         //platformPrint(buffer);
         memset(buffer, 0, 1024);
@@ -612,7 +620,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x1: //movw
                 memory[((memory[PC+1] & 0xF0) >> 4)*2] = memory[(memory[PC+1] & 0xF)*2];
                 memory[(((memory[PC+1] & 0xF0) >> 4)*2)+1] = memory[((memory[PC+1] & 0xF)*2)+1];
@@ -915,7 +923,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x82:
             case 0x83:
                 if((memory[PC+1] & 0xF) >= 0x8) //st (std) y
@@ -934,7 +942,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x84:
             case 0x85:
             case 0x8C:
@@ -955,7 +963,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x86:
             case 0x87:
                 if((memory[PC+1] & 0xF) >= 0x8) //st (std) y
@@ -974,7 +982,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x88:
             case 0x89:
                 if((memory[PC+1] & 0xF) >= 0x8) //ld (ldd) y
@@ -993,7 +1001,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x8A:
             case 0x8B:
             case 0x8E:
@@ -1014,7 +1022,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x90:
             case 0x91:
                 if((memory[PC+1] & 0xF) == 0x0) //lds
@@ -1100,7 +1108,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0x92:
             case 0x93:
                if((memory[PC+1] & 0xF) == 0x0) //sts
@@ -1228,7 +1236,7 @@ int32_t fetch()
                    PC+=2;
                    break;
                }
-               assert(0);
+               handleUnimplemented();
             case 0x94:
             case 0x95:
                 if((memory[PC] == 0x94) && (memory[PC+1] == 0x08)) //sec
@@ -1242,6 +1250,12 @@ int32_t fetch()
                     result = (2*((memory[31] << 8) | memory[30])) + programStart;
                     // No SREG Updates
                     PC = result;
+                    break;
+                }
+                if((memory[PC] == 0x94) && (memory[PC+1] == 0x68)) //set
+                {
+                    newStatus.T = SET;
+                    PC+=2;
                     break;
                 }
                 if((memory[PC] == 0x94) && (memory[PC+1] == 0x78)) //sei
@@ -1403,7 +1417,7 @@ int32_t fetch()
                         PC = result;
                         break;
                     default:
-                        assert(0);
+                        handleUnimplemented();
                         break;
                 }
                 break;
@@ -1425,7 +1439,7 @@ int32_t fetch()
                         result = 30;
                         break;
                     default:
-                        assert(0);
+                        handleUnimplemented();
                 }
                 result = (memory[result+1] << 8) | memory[result];
                 newStatus.V = generateVStatus(result, (((memory[PC+1] & 0xC0) >> 0x2) | (memory[PC+1] & 0xF)));
@@ -1460,7 +1474,7 @@ int32_t fetch()
                         memory[31] = (result & 0xFF00) >> 8;
                         break;
                     default:
-                        assert(0);
+                        handleUnimplemented();
                 }
                 PC+=2;
                 break;
@@ -1511,7 +1525,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0xA9:
                 if((memory[PC+1] & 0xF) < 0x8) //ld (ldd) z
                 {
@@ -1521,7 +1535,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0xA2:
             case 0xA3:
             case 0xA6:
@@ -1543,7 +1557,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0xB0:
             case 0xB1:
             case 0xB2:
@@ -1694,7 +1708,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0xF4:
             case 0xF5:
             case 0xF6:
@@ -1754,7 +1768,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0xF8:
             case 0xF9: //bld
                 if((memory[PC+1] & 0xF) < 0x8)
@@ -1763,7 +1777,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0xFA:
             case 0xFB: //bst
                 result = memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
@@ -1786,7 +1800,7 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             case 0xFE:
             case 0xFF: //sbrs
                 if((memory[PC+1] & 0xF) < 0x8)
@@ -1803,11 +1817,9 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
-                assert(0);
+                handleUnimplemented();
             default:
-                sprintf(buffer, "Instruction not implemented at address 0x%X", PC);
-                platformPrint(buffer);
-                assert(0);
+                handleUnimplemented();
                 break;
         }
         pushStatus(newStatus);
