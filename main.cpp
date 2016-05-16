@@ -1519,6 +1519,7 @@ int32_t fetch()
             case 0xA4:
             case 0xA5:
             case 0xA9:
+            case 0xAD:
                 if((memory[PC+1] & 0xF) < 0x8) //ld (ldd) z
                 {
                     result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
@@ -1542,6 +1543,7 @@ int32_t fetch()
             case 0xA7:
             case 0xAA:
             case 0xAB:
+            case 0xAE:
             case 0xAF:
                 if((memory[PC+1] & 0xF) < 0x8) //st (std) z
                 {
