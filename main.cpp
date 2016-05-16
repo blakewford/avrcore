@@ -183,7 +183,11 @@ int32_t main(int32_t argc, char** argv)
     execProgram();
 
     char buffer[256];
+    memset(buffer, '\0', 256);
     sprintf(buffer, "Program Ended at Address 0x%X", PC);
+    platformPrint(buffer);
+    memset(buffer, '\0', 256);
+    sprintf(buffer, "Result 0x%X%X", memory[25], memory[24]);
     platformPrint(buffer);
 
 #ifdef PROFILE
