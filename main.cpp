@@ -1516,21 +1516,21 @@ int32_t fetch()
                break;
             case 0xA0:
             case 0xA1:
+            case 0xA4:
             case 0xA5:
-                if((memory[PC+1] & 0xF) >= 0x8) //ld (ldd) y
-                {
-                    result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
-                    memory[result] = readMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)));
-                    // No SREG Updates
-                    PC+=2;
-                    break;
-                }
-                handleUnimplemented();
             case 0xA9:
                 if((memory[PC+1] & 0xF) < 0x8) //ld (ldd) z
                 {
                     result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
                     memory[result] = readMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)));
+                    // No SREG Updates
+                    PC+=2;
+                    break;
+                }
+                if((memory[PC+1] & 0xF) >= 0x8) //ld (ldd) y
+                {
+                    result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
+                    memory[result] = readMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)));
                     // No SREG Updates
                     PC+=2;
                     break;
@@ -1541,6 +1541,7 @@ int32_t fetch()
             case 0xA6:
             case 0xA7:
             case 0xAA:
+            case 0xAB:
                 if((memory[PC+1] & 0xF) < 0x8) //st (std) z
                 {
                     result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
