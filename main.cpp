@@ -632,6 +632,7 @@ int32_t fetch()
                 PC+=2;
                 break;
             case 0x2: //muls
+            case 0x3: //mulsu
                 result = (int)memory[((memory[PC+1] & 0xF0) >> 4)*2]*(int)memory[(memory[PC+1] & 0xF)*2];
                 memory[0] = result & 0xFF;
                 memory[1] = result >> 8;
@@ -1524,6 +1525,7 @@ int32_t fetch()
             case 0xA5:
             case 0xA8:
             case 0xA9:
+            case 0xAC:
             case 0xAD:
                 if((memory[PC+1] & 0xF) < 0x8) //ld (ldd) z
                 {
