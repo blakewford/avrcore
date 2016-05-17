@@ -5,7 +5,7 @@ gamebuino: main.cpp
 	g++ -g $< -o $@ -std=c++11 -DPROFILE -DATMEGA328
 
 android:
-	~/android-ndk-r10d/ndk-build
+	~/android-ndk-r10e/ndk-build
 
 asm.js: main.cpp
 	emcc -DATMEGA32U4 -O3 -s ASM_JS=1 $< -o avrcore.js -s EXPORTED_FUNCTIONS="['_main']"
