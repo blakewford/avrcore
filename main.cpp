@@ -184,15 +184,9 @@ int32_t main(int32_t argc, char** argv)
 
     char buffer[256];
     memset(buffer, '\0', 256);
-    sprintf(buffer, "Program Ended at Address 0x%X", PC);
-    platformPrint(buffer);
-    memset(buffer, '\0', 256);
-    sprintf(buffer, "Result 0x%X%X", memory[25], memory[24]);
-    platformPrint(buffer);
-
 #ifdef PROFILE
     microseconds endProfile = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
-    sprintf(buffer, "Execution Time in Microseconds %lld", (long long)(endProfile.count()-startProfile.count()));
+    sprintf(buffer, "%s 0x%X %i %lld", argv[2], PC, (memory[25] << 8 | memory[24]), (long long)(endProfile.count()-startProfile.count()));
     platformPrint(buffer);
 #endif
 
