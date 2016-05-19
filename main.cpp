@@ -483,6 +483,10 @@ int8_t generateVStatus(uint8_t firstOp, uint8_t secondOp)
     {
         return ((firstOp + secondOp) & 0x80) == 0 ? CLR: SET;
     }
+    else if((firstOp == 0x80 && secondOp == 0) || (firstOp == 0 && secondOp == 0x80))
+    {
+        return SET;
+    }
 
     return CLR;
 }
