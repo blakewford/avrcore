@@ -99,8 +99,8 @@ struct status
     int8_t Z:3;
     int8_t C:3;
 };
-bool checkEqual = false;
-bool ignoreBranch = false;
+bool branchEqual = false;
+bool branchGreater = false;
 uint8_t memory[FLASH_SIZE];
 int32_t programStart = ENTRY_ADDRESS;
 uint16_t PC;
@@ -647,8 +647,8 @@ int32_t fetch()
                 newStatus.Z = result == 0x00 ? newStatus.Z: CLR;
                 newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                 newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
-                ignoreBranch = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) > (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-                checkEqual = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) == (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                branchGreater = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) > (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                branchEqual = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) == (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                 result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                 if(result == 0x80 && SREG.C == SET)
                 {
@@ -712,6 +712,8 @@ int32_t fetch()
                newStatus.Z = result == 0x00 ? SET: CLR;
                newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
+               branchGreater = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) > (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               branchEqual = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) == (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                PC+=2;
                break;
             case 0x18:
@@ -726,6 +728,8 @@ int32_t fetch()
                newStatus.Z = result == 0x00 ? SET: CLR;
                newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
                memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] = result & 0xFF;
+               branchGreater = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) > (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+               branchEqual = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) == (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                PC+=2;
                break;
             case 0x1C:
@@ -809,6 +813,8 @@ int32_t fetch()
                 newStatus.Z = result == 0x00 ? SET: CLR;
                 newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                 newStatus.C = abs((((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF))) > abs(memory[16+(memory[PC+1] >> 4)]) ? SET: CLR;
+                branchGreater = memory[16+(memory[PC+1] >> 4)] > (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF));
+                branchEqual = memory[16+(memory[PC+1] >> 4)] == (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF));
                 PC+=2;
                 break;
             case 0x40:
@@ -864,6 +870,8 @@ int32_t fetch()
                 newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
                 newStatus.Z = result == 0x00 ? SET: CLR;
                 newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
+                branchGreater = memory[16+(memory[PC+1] >> 4)] > (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF));
+                branchEqual = memory[16+(memory[PC+1] >> 4)] == (((memory[PC] & 0xF) << 4) | (memory[PC+1] & 0xF));
                 PC+=2;
                 break;
             case 0x60:
@@ -1714,10 +1722,10 @@ int32_t fetch()
                 }
                 if((((memory[PC] & 0x0C) >> 2) == 0x0) && ((memory[PC+1] & 0x7) == 0x4)) //brlt
                 {
-                    if(SREG.S == SET && !ignoreBranch)
+                    if(SREG.S == SET && !branchGreater)
                     {
-                        checkEqual = false;
-                        ignoreBranch = false;
+                        branchEqual = false;
+                        branchGreater = false;
                         result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
                         PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
                     }
@@ -1776,10 +1784,10 @@ int32_t fetch()
                 }
                 if((((memory[PC] & 0x0C) >> 2) == 0x1) && ((memory[PC+1] & 0x7) == 0x4)) //brge
                 {
-                    if(SREG.S == CLR && (!ignoreBranch | checkEqual))
+                    if(SREG.S == CLR)
                     {
-                        checkEqual = false;
-                        ignoreBranch = false;
+                        branchEqual = false;
+                        branchGreater = false;
                         result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
                         PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
                     }
