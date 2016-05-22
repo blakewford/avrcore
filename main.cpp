@@ -90,14 +90,14 @@ struct status
         T = IGNORE;
         I = IGNORE;
     }
-    int8_t C:3;
-    int8_t Z:3;
-    int8_t N:3;
-    int8_t V:3;
-    int8_t S:3;
-    int8_t H:3;
-    int8_t T:3;
     int8_t I:3;
+    int8_t T:3;
+    int8_t H:3;
+    int8_t S:3;
+    int8_t V:3;
+    int8_t N:3;
+    int8_t Z:3;
+    int8_t C:3;
 };
 uint8_t memory[FLASH_SIZE];
 int32_t programStart = ENTRY_ADDRESS;
