@@ -650,7 +650,7 @@ int32_t fetch()
                 branchGreater = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) > (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                 branchEqual = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) == (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                 result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
-                if(result == 0x80 && SREG.C == SET)
+                if((result == 0x80 && SREG.C == SET) || (result == 0xFF80 && memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] == 0) || (result == 0xFFFF && SREG.C == CLR))
                 {
                     newStatus.V = SET;
                     newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
@@ -1785,6 +1785,7 @@ int32_t fetch()
                 if((((memory[PC] & 0x0C) >> 2) == 0x1) && ((memory[PC+1] & 0x7) == 0x4)) //brge
                 {
                     if(SREG.S == CLR)
+//                    if(SREG.S == CLR && (branchGreater || branchEqual))
                     {
                         branchEqual = false;
                         branchGreater = false;
