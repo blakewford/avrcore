@@ -99,6 +99,7 @@ struct status
     int8_t Z:3;
     int8_t C:3;
 };
+bool checkEqual = false;
 bool ignoreBranch = false;
 uint8_t memory[FLASH_SIZE];
 int32_t programStart = ENTRY_ADDRESS;
@@ -647,6 +648,7 @@ int32_t fetch()
                 newStatus.S = ((newStatus.N ^ newStatus.V) > 0) ? SET: CLR;
                 newStatus.C = abs(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)] + (SREG.C == SET ? 1: 0)) > abs(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) ? SET: CLR;
                 ignoreBranch = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) > (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
+                checkEqual = (int8_t)(memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)]) == (int8_t)(memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                 result = (memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)] - memory[(((memory[PC] & 0x2) >> 1) << 4) | (memory[PC+1] & 0xF)]);
                 if(result == 0x80 && SREG.C == SET)
                 {
@@ -1714,6 +1716,7 @@ int32_t fetch()
                 {
                     if(SREG.S == SET && !ignoreBranch)
                     {
+                        checkEqual = false;
                         ignoreBranch = false;
                         result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
                         PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
@@ -1773,8 +1776,10 @@ int32_t fetch()
                 }
                 if((((memory[PC] & 0x0C) >> 2) == 0x1) && ((memory[PC+1] & 0x7) == 0x4)) //brge
                 {
-                    if(SREG.S == CLR)
+                    if(SREG.S == CLR && (!ignoreBranch | checkEqual))
                     {
+                        checkEqual = false;
+                        ignoreBranch = false;
                         result = ((memory[PC] & 0x3) << 5) | (memory[PC+1] >> 3);
                         PC = (0x40 < result) ? (PC - (2*(0x80 - result))) : (PC + (2*result));
                     }
