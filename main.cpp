@@ -165,7 +165,8 @@ int32_t main(int32_t argc, char** argv)
         int32_t size = ftell(executable);
         rewind(executable);
         uint8_t* binary = (uint8_t*)malloc(size);
-        fread(binary, 1, size, executable);
+        size_t read = fread(binary, 1, size, executable);
+        if(read != size) return -1;
         fclose(executable);
         loadProgram(binary);
 #ifdef EMSCRIPTEN
