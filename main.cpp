@@ -302,14 +302,7 @@ void pushStatus(status& newStatus)
 
 void engineInit()
 {
-    SREG.C = CLR;
-    SREG.Z = CLR;
-    SREG.N = CLR;
-    SREG.V = CLR;
-    SREG.S = CLR;
-    SREG.H = CLR;
-    SREG.T = CLR;
-    SREG.I = CLR;
+    SREG.clear();
 
     PC = programStart;
     int32_t SP = programStart - 1;
@@ -613,7 +606,7 @@ int32_t fetch()
         newStatus.clear();
 
 #ifndef EMSCRIPTEN
-        system_clock::time_point syncPoint = system_clock::now() + nanoseconds(100);
+        system_clock::time_point syncPoint = system_clock::now() + nanoseconds(60);
 #endif
         switch(memory[PC])
         {

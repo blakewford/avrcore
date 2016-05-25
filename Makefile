@@ -1,5 +1,5 @@
 avrcore: main.cpp
-	g++ -g $< -o $@ -std=c++11 -DPROFILE -DATMEGA32U4
+	g++ -Ofast $< -o $@ -std=c++11 -DPROFILE -DATMEGA32U4
 
 gamebuino: main.cpp
 	g++ -g $< -o $@ -std=c++11 -DPROFILE -DATMEGA328
