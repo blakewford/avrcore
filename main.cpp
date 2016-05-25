@@ -598,8 +598,12 @@ void handleUnimplemented()
 
 uint16_t result;
 status newStatus;
+system_clock::time_point syncPoint;
 int32_t fetch()
 {
+#ifndef EMSCRIPTEN
+        syncPoint = system_clock::now() + nanoseconds(60);
+#endif
         if((PC >= FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
             return false;
 
@@ -608,9 +612,6 @@ int32_t fetch()
         result = 0;
         newStatus.clear();
 
-#ifndef EMSCRIPTEN
-        system_clock::time_point syncPoint = system_clock::now() + nanoseconds(60);
-#endif
         switch(memory[PC])
         {
             case 0x0:
@@ -1866,7 +1867,8 @@ int32_t fetch()
 #ifdef EMSCRIPTEN
         std::this_thread::yield();
 #else
-        std::this_thread::sleep_until(syncPoint);
+        while(system_clock::now() < syncPoint)
+            ;
 #endif
         return true;
 }
