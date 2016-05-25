@@ -143,7 +143,7 @@ void platformPrint(const char* message)
 }
 
 #ifndef LIBRARY
-
+size_t totalFetches = 0;
 int32_t main(int32_t argc, char** argv)
 {
     cachedArgc = argc;
@@ -193,7 +193,8 @@ int32_t main(int32_t argc, char** argv)
     microseconds endProfile = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
     char buffer[256];
     memset(buffer, '\0', 256);
-    sprintf(buffer, "%s 0x%X %i %lld", argv[2], PC, (memory[25] << 8 | memory[24]), (long long)(endProfile.count()-startProfile.count()));
+    long long profileTime = (long long)(endProfile.count()-startProfile.count());
+    sprintf(buffer, "%s 0x%X %i %lld %lld", argv[2], PC, (memory[25] << 8 | memory[24]), profileTime, (profileTime*1000)/totalFetches);
     platformPrint(buffer);
 #endif
 
@@ -601,6 +602,8 @@ int32_t fetch()
 {
         if((PC >= FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
             return false;
+
+        totalFetches++;
 
         result = 0;
         newStatus.clear();
