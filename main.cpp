@@ -81,6 +81,10 @@ struct status
 {
     status()
     {
+        clear();
+    }
+    void clear()
+    {
         C = IGNORE;
         Z = IGNORE;
         N = IGNORE;
@@ -130,11 +134,11 @@ void resetFetchState()
 void platformPrint(const char* message)
 {
 #ifdef EMSCRIPTEN
-            char buffer[1024];
-            sprintf(buffer, "console.log('%s')", message);
-            emscripten_run_script(buffer);
+    char buffer[1024];
+    sprintf(buffer, "console.log('%s')", message);
+    emscripten_run_script(buffer);
 #else
-            printf("%s\n", message);
+    printf("%s\n", message);
 #endif
 }
 
@@ -185,10 +189,10 @@ int32_t main(int32_t argc, char** argv)
     engineInit();
     execProgram();
 
-    char buffer[256];
-    memset(buffer, '\0', 256);
 #ifdef PROFILE
     microseconds endProfile = duration_cast<microseconds>(high_resolution_clock::now().time_since_epoch());
+    char buffer[256];
+    memset(buffer, '\0', 256);
     sprintf(buffer, "%s 0x%X %i %lld", argv[2], PC, (memory[25] << 8 | memory[24]), (long long)(endProfile.count()-startProfile.count()));
     platformPrint(buffer);
 #endif
@@ -598,17 +602,16 @@ void handleUnimplemented()
     assert(0);
 }
 
-char buffer[1024];
+uint16_t result;
+status newStatus;
 int32_t fetch()
 {
         if((PC >= FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
             return false;
 
-        uint16_t result;
-        status newStatus;
-        //sprintf(buffer, "0x%X Instruction 0x%X 0x%X", PC, memory[PC], memory[PC+1]);
-        //platformPrint(buffer);
-        memset(buffer, 0, 1024);
+        result = 0;
+        newStatus.clear();
+
 #ifndef EMSCRIPTEN
         system_clock::time_point syncPoint = system_clock::now() + nanoseconds(100);
 #endif
