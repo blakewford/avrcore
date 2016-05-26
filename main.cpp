@@ -764,8 +764,8 @@ int32_t fetch()
             case 0x25:
             case 0x26:
             case 0x27: //eor
-               memory[(memory[PC+1] & 0xF0) >> 4] = memory[(memory[PC+1] & 0xF0) >> 4]^memory[memory[PC+1] & 0xF];
-               result = memory[(memory[PC+1] & 0xF0) >> 4];
+               memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)] = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)]^memory[(((memory[PC] & 0x2) << 3) | (memory[PC+1] & 0xF))];
+               result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
                newStatus.V = CLR;
                newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
                newStatus.Z = result == 0x00 ? SET: CLR;
