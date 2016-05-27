@@ -1053,7 +1053,7 @@ int32_t fetch()
                 if((memory[PC+1] & 0xF) == 0x1) //ld z+
                 {
                     result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
-                    memory[result] = readMemory(((memory[31] << 8) | memory[30]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)));
+                    memory[result] = readMemory((memory[31] << 8) | memory[30]);
                     // No SREG Updates
                     if(memory[30] < 0xFF)
                     {
