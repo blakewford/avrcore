@@ -598,7 +598,9 @@ void handleUnimplemented()
 
 uint16_t result;
 status newStatus;
+#ifndef EMSCRIPTEN
 system_clock::time_point syncPoint;
+#endif
 int32_t fetch()
 {
 #ifndef EMSCRIPTEN
@@ -607,7 +609,9 @@ int32_t fetch()
         if((PC >= FLASH_SIZE) || ((memory[PC] == 0x95) && (memory[PC+1] == 0x98))) //break
             return false;
 
+#ifndef EMSCRIPTEN
         totalFetches++;
+#endif
 
         result = 0;
         newStatus.clear();
