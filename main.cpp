@@ -1400,7 +1400,7 @@ int32_t fetch()
                     case 0x7: //ror
                         result = memory[((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4)];
                         newStatus.C = (result & 0x1) > 0 ? SET: CLR;
-                        result = ((result >> 1) | (newStatus.C << 7));
+                        result = ((result >> 1) | (SREG.C << 7));
                         newStatus.N = ((result & 0x80) > 0) ? SET: CLR;
                         newStatus.V = ((newStatus.N ^ newStatus.C) > 0) ? SET: CLR;
                         newStatus.Z = result == 0x00 ? SET: CLR;
