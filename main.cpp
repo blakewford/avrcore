@@ -1819,7 +1819,14 @@ int32_t fetch()
             case 0xF9: //bld
                 if((memory[PC+1] & 0xF) < 0x8)
                 {
-                    memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)] &= SREG.T ? (1 << (memory[PC+1] & 0x7)): ~(1 << (memory[PC+1] & 0x7));
+                    if(SREG.T == SET)
+                    {
+                        memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)] |= (1 << (memory[PC+1] & 0x7));
+                    }
+                    else
+                    {
+                        memory[((memory[PC] & 0x01) << 4) | ((memory[PC+1] & 0xF0) >> 4)] &= ~(1 << (memory[PC+1] & 0x7));
+                    }
                     PC+=2;
                     break;
                 }
