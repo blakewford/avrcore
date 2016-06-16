@@ -76,6 +76,7 @@ char* cachedArgv[64];
 //Platform Specific Status Bits
 #define ATMEGA32U4_PLLE_BIT 1<<1
 #define ATMEGA32U4_PLOCK_BIT 1<<0
+#define ATMEGA2560_RAMPZ 0x58
 
 //Globals
 #define INSTRUCTION_LIMIT 1024
@@ -1096,6 +1097,23 @@ int32_t fetch()
                 {
                     result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
                     memory[result] = readMemory(2*(((memory[31] << 8) | memory[30]) >> 1) + programStart + ((((memory[31] << 8) | memory[30]) & 0x1) == 0 ? 1: 0));
+                    // No SREG Updates
+                    if(memory[30] < 0xFF)
+                    {
+                        memory[30] = memory[30]+1;
+                    }
+                    else
+                    {
+                        memory[31] = memory[31]+1;
+                        memory[30] = 0x00;
+                    }
+                    PC+=2;
+                    break;
+                }
+                if((memory[PC+1] & 0xF) == 0x7) //elpm
+                {
+                    result = ((memory[PC] & 0x1) << 4) | (memory[PC+1] >> 4);
+                    memory[result] = readMemory(2*(((memory[31] << 8) | memory[30]) >> 1) + programStart + ((((memory[31] << 8) | memory[30]) & 0x1) == 0 ? 1: 0) + (memory[ATMEGA2560_RAMPZ] << 16));
                     // No SREG Updates
                     if(memory[30] < 0xFF)
                     {
