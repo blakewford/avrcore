@@ -4,6 +4,9 @@ avrcore: main.cpp
 gamebuino: main.cpp
 	g++ -g $< -o $@ -std=c++11 -DPROFILE -DATMEGA328
 
+mega_adk: main.cpp
+	g++ -g $< -o $@ -std=c++11 -DPROFILE -DATMEGA2560
+
 android:
 	~/android-ndk-r10e/ndk-build
 
@@ -19,6 +22,7 @@ gamebuino_avrcore.js: main.cpp
 clean:
 	-@rm avrcore
 	-@rm gamebuino
+	-@rm mega_adk
 	-@rm avrcore.js
 	-@rm emcc_avrcore.js
 	-@rm gamebuino_avrcore.js
