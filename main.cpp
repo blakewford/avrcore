@@ -1358,6 +1358,10 @@ int32_t fetch()
                     decrementStackPointer();
                     memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = (PC & 0xFF00) >> 8;
                     decrementStackPointer();
+#ifdef ATMEGA2560
+                    memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]] = 0x00;
+                    decrementStackPointer();
+#endif
                     // No SREG Updates
                     PC = result;
                     break;
@@ -1368,7 +1372,12 @@ int32_t fetch()
                     result = (memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS];
                     incrementStackPointer();
                     newStatus.I = SET;
+#ifndef ATMEGA2560
                     PC = (memory[result] | ((memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]]) << 8));
+#else
+                    incrementStackPointer();
+                    PC |= ((memory[(memory[SPH_ADDRESS] << 8) | memory[SPL_ADDRESS]]) << 16);
+#endif
                     break;
                 }
                 switch(memory[PC+1] & 0x0F)
