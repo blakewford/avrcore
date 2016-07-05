@@ -1225,7 +1225,7 @@ int32_t fetch()
                if((memory[PC+1] & 0xF) == 0x9) //st (std) y+
                {
                    result = memory[((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4)];
-                   writeMemory(((memory[29] << 8) | memory[28]) + (((memory[PC] & 0xC) << 1) | (memory[PC+1] & 0x7) | (((memory[PC] >> 1) & 0x10) << 1)), result);
+                   writeMemory(((memory[29] << 8) | memory[28]), result);
                    // No SREG Updates
                    if(memory[28] < 0xFF)
                    {
@@ -1239,7 +1239,7 @@ int32_t fetch()
                    PC+=2;
                    break;
                }
-               if((memory[PC+1] & 0xF) == 0xA) //st (std) y-
+               if((memory[PC+1] & 0xF) == 0xA) //st (std) -y
                {
                    if(memory[28] == 0x00)
                    {
