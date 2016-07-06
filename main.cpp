@@ -1127,6 +1127,23 @@ int32_t fetch()
                     PC+=2;
                     break;
                 }
+                if((memory[PC+1] & 0xF) == 0x9) //ld y+
+                {
+                    result = ((memory[PC] & 0x1) << 4) | ((memory[PC+1] & 0xF0) >> 4);
+                    memory[result] = readMemory((memory[29] << 8) | memory[28]);
+                    // No SREG Updates
+                    if(memory[28] < 0xFF)
+                    {
+                        memory[28] = memory[28]+1;
+                    }
+                    else
+                    {
+                        memory[29] = memory[29]+1;
+                        memory[29] = 0x00;
+                    }
+                    PC+=2;
+                    break;
+                }
                 if((memory[PC+1] & 0xF) == 0xA) //ld -y
                 {
                     if(memory[28] == 0x00)
