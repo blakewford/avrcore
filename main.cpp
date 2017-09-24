@@ -469,6 +469,21 @@ void loadProgram(uint8_t* binary)
         {
             break;
         }
+        else if(recordType == 0x02)
+        {
+            int32_t segmentAddress = 0;
+            while(byteCount)
+            {
+                segmentAddress = getValueFromHex(&binary[fileCursor+=2], 2);
+                segmentAddress = segmentAddress << 4;
+                segmentAddress |= getValueFromHex(&binary[fileCursor+=2], 2);
+                segmentAddress = segmentAddress << 4;
+                byteCount-=2;
+            }
+            while(binary[++fileCursor] != ':')
+            ;
+            addressCursor = segmentAddress*16;
+        }
         else
         {
             assert(false);
